@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>深入汇编指令解析Java关键字volatile - 编程之路</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="编程之路"><meta name="msapplication-TileImage" content="/img/favicon.ico"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="编程之路"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="volatile关键字是Java提供的一种轻量级同步机制。它能够保证可见性和有序性，但是不能保证原子性"><meta property="og:type" content="blog"><meta property="og:title" content="深入汇编指令解析Java关键字volatile"><meta property="og:url" content="https://www.wangheng.online/volatile/"><meta property="og:site_name" content="编程之路"><meta property="og:description" content="volatile关键字是Java提供的一种轻量级同步机制。它能够保证可见性和有序性，但是不能保证原子性"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-04-08T19:17:05.000Z"><meta property="article:modified_time" content="2021-04-08T19:19:55.541Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="Java"><meta property="article:tag" content="并发编程"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/volatile/"},"headline":"深入汇编指令解析Java关键字volatile","image":[],"datePublished":"2021-04-08T19:17:05.000Z","dateModified":"2021-04-08T19:19:55.541Z","author":{"@type":"Person","name":"CoderW"},"description":"volatile关键字是Java提供的一种轻量级同步机制。它能够保证可见性和有序性，但是不能保证原子性"}</script><link rel="canonical" href="https://www.wangheng.online/volatile/"><link rel="icon" href="/img/favicon.ico"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><!--!--><!--!--><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="编程之路" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-6-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-04-08T19:17:05.000Z" title="4/9/2021, 3:17:05 AM">2021-04-09</time>发表</span><span class="level-item"><time dateTime="2021-04-08T19:19:55.541Z" title="4/9/2021, 3:19:55 AM">2021-04-09</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/Java/">Java</a></span><span class="level-item">24 分钟读完 (大约3609个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span></div></div><h1 class="title is-3 is-size-4-mobile"> 深入汇编指令解析Java关键字volatile</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/volatile/" target="_blank">https://www.wangheng.online/volatile/</a></p></div><div class="content"><h2 id="volatile是什么"><a href="#volatile是什么" class="headerlink" title="volatile是什么"></a>volatile是什么</h2><p>volatile关键字是Java提供的一种轻量级同步机制。它能够保证可见性和有序性，但是不能保证原子性</p>
+<h2 id="可见性"><a href="#可见性" class="headerlink" title="可见性"></a>可见性</h2><p>对于volatile的可见性，先看看这段代码的执行</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b3bdf2e1b1c94b208705c59fe5391fdf~tplv-k3u1fbpfcp-zoom-1.image" alt="7" width="80%;" />
+</div>
+
+<ul>
+<li><code>flag</code>默认为<code>true</code></li>
+<li>创建一个线程A去判断<code>flag</code>是否为<code>true</code>，如果为<code>true</code>循环执行<code>i++</code>操作</li>
+<li>两秒后，创建另一个线程B将<code>flag</code>修改为<code>false</code></li>
+<li>线程A没有感知到<code>flag</code>已经被修改成<code>false</code>了，不能跳出循环</li>
+</ul>
+<p>这相当于啥呢？相当于你的女神和你说，你好好努力，年薪百万了就嫁给你，你听了之后，努力赚钱。3年之后，你年薪百万了，回去找你女神，结果发现你女神结婚了，她结婚的消息根本没有告诉你！难不难受？</p>
+<div align = "center">
+<img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b1ed8776e4a44442b58f6893aa1d9123~tplv-k3u1fbpfcp-watermark.image" alt="image-20210114002332684" width="25%;" />
+</div>
+
+<p>女神结婚可以不告诉你，可是Java代码中的属性都是存在内存中，一个线程的修改为什么另一个线程为什么不可见呢？这就不得不提到Java中的内存模型了，Java中的内存模型，简称JMM，JMM定义了线程和主内存之间的抽象关系，定义了线程之间的共享变量存储在主内存中，每个线程都有一个私有的本地内存，本地内存中存储了该线程以读/写共享变量的副本，它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。</p>
+<p>注意！JMM是一个屏蔽了不同操作系统架构的差异的抽象概念，只是一组Java规范。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4e313c6fbd224c48b21c4915769a8f6c~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210114015350677" width="70%;" />
+</div>
+
+<p>了解了JMM，现在我们再回顾一下文章开头的那段代码，为什么线程B修改了flag线程A看到的还是原来的值呢？</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210114015319027" width="70%;" />
+</div>
+
+<ul>
+<li>因为线程A复制了一份刚开始的<code>flage=true</code>到本地内存，之后线程A使用的<code>flag</code>都是这个复制到本地内存的flag。</li>
+<li>线程B修改了<code>flag</code>之后，将flag的值刷新到主内存，此时主内存的flag值变成了<code>false</code>。</li>
+<li>线程A是不知道线程B修改了<code>flag</code>，一直用的是本地内存的<code>flag = true</code>。</li>
+</ul>
+<p>那么，如何才能让线程A知道flag被修改了呢？或者说怎么让线程A本地内存中缓存的flag无效，实现线程间可见呢？用volatile修饰flag就可以做到:</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/fdb6da8cc1c94088b7ed2927bbd880db~tplv-k3u1fbpfcp-zoom-1.image" alt="8" width="80%;" />
+</div>
+
+<p>我们可以看到，用volatile修饰flag之后，线程B修改flag之后线程A是能感知到的，说明了volatile保证了线程同步之间的可见性。</p>
+<h2 id="重排序"><a href="#重排序" class="headerlink" title="重排序"></a>重排序</h2><p>在阐述volatile有序性之前，需要先补充一些关于重排序的知识。</p>
+<p>重排序是指编译器和处理器为了优化程序性能而对指令序列进行重新排序的一种手段。</p>
+<p>为什么要有重排序呢？简单来说，就是为了提升执行效率。为什么能提升执行效率呢？我们看下面这个例子：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/360072428cd74f85b7ae9de2be3bcf32~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210116222410675" width="60%;" />
+</div>
+
+<p>可以看到重排序之后CPU实际执行省略了一个读取和写回的操作，也就间接的提升了执行效率。</p>
+<p>有一点必须强调的是，上图的例子只是为了让读者更好的理解为什么重排序能提升执行效率，实际上Java里面的重排序并不是基于代码级别的，从代码到CPU执行之间还有很多个阶段，CPU底层还有一些优化，实际上的执行流程可能并不是上图的说的那样。不必过于纠结于此。</p>
+<p>重排序可以提高程序的运行效率，但是必须遵循as-if-serial语义。as-if-serial语义是什么呢？简单来说，就是不管你怎么重排序，你必须保证不管怎么重排序，单线程下程序的执行结果不能被改变。</p>
+<h2 id="有序性"><a href="#有序性" class="headerlink" title="有序性"></a>有序性</h2><p>上面我们已经介绍了Java有重排序情况，现在我们再来聊一聊volatile的有序性。</p>
+<p>先看一个经典的面试题：为什么DDL（double check lock）单例模式需要加volatile关键字？</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dcb900f11fc147248f43f24f2b5d762f~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210117004807338" width="70%;" />
+</div>
+
+<p>因为<code>singleton = new Singleton()</code>不是一个原子操作，大概要经过这几个步骤：</p>
+<ul>
+<li>分配一块内存空间</li>
+<li>调用构造器，初始化实例</li>
+<li><code>singleton</code>指向分配的内存空间</li>
+</ul>
+<p>实际执行的时候，可能发生重排序，导致实际执行步骤是这样的：</p>
+<ul>
+<li>申请一块内存空间</li>
+<li><code>singleton</code>指向分配的内存空间</li>
+<li>调用构造器，初始化实例</li>
+</ul>
+<p>在<code>singleton</code>指向分配的内存空间之后，<code>singleton</code>就不为空了。但是在没有调用构造器初始化实例之前，这个对象还处于<code>半初始化状态</code>，在这个状态下，实例的属性都还是默认属性，这个时候如果有另一个线程调用<code>getSingleton()</code>方法时，会拿到这个半初始化的对象，导致出错。</p>
+<p>而加volatile修饰之后，就会禁止重排序，这样就能保证在对象初始化完了之后才把<code>singleton</code>指向分配的内存空间，杜绝了一些不可控错误的产生。volatile提供了happens-before保证，对volatile变量的写入happens-before所有其他线程后续对的读操作。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>从上面的DDL单例用例来看，在并发情况下，重排序的存在会导致一些未知的错误。而加上volatile之后会防止重排序，那volatile是如何禁止重排序呢？</p>
+<p>为了实现volatile的内存语义，JMM会限制特定类型的编译器和处理器重排序，JMM会针对编译器制定volatile重排序规则表：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/693a076ef3dd4dd7b5b57005b1168c95~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210116222259671" width="70%;" />
+</div>
+
+<p>总结来说就是：</p>
+<ul>
+<li>第二个操作是volatile写，不管第一个操作是什么都不会重排序</li>
+<li>第一个操作是volatile读，不管第二个操作是什么都不会重排序</li>
+<li>第一个操作是volatile写，第二个操作是volatile读，也不会发生重排序</li>
+</ul>
+<p>如何保证这些操作不会发送重排序呢？就是通过插入内存屏障保证的，JMM层面的内存屏障分为读（load）屏障和写（Store）屏障，排列组合就有了四种屏障。对于volatile操作，JMM内存屏障插入策略：</p>
+<ul>
+<li>在每个volatile写操作的前面插入一个StoreStore屏障</li>
+<li>在每个volatile写操作的后面插入一个StoreLoad屏障</li>
+<li>在每个volatile读操作的后面插入一个LoadLoad屏障</li>
+<li>在每个volatile读操作的后面插入一个LoadStore屏障</li>
+</ul>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/52b6459d4b7b49ef8b7f2da8ff55130b~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210116222227246" width="70%;" />
+</div>
+
+<p>上面的屏障都是JMM规范级别的，意思是，按照这个规范写JDK能保证volatile修饰的内存区域的操作不会发送重排序。</p>
+<p>在硬件层面上，也提供了一系列的内存屏障来提供一致性的能力。拿X86平台来说，主要提供了这几种内存屏障指令：</p>
+<ul>
+<li> lfence指令：在lfence指令前的读操作当必须在lfence指令后的读操作前完成，类似于读屏障</li>
+<li> sfence指令：在sfence指令前的写操作当必须在sfence指令后的写操作前完成，类似于写屏障</li>
+<li> mfence指令： 在mfence指令前的读写操作当必须在mfence指令后的读写操作前完成，类似读写屏障。</li>
+</ul>
+<p>JMM规范需要加这么多内存屏障，但实际情况并不需要加这么多内存屏障。以我们常见的X86处理器为例，X86处理器不会对<code>读-读</code>、<code>读-写</code>和<code>写-写</code>操作做重排序，会省略掉这3种操作类型对应的内存屏障，仅会对<code>写-读</code>操作做重排序。所以volatile<code>写-读</code>操作只需要在volatile写后插入StoreLoad屏障。在《The JSR-133 Cookbook for Compiler Writers》中，也很明确的指出了这一点：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4cf7b6a4ffb04deabb6b62f0ecaa3276~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210116195921670" width="50%;" />
+</div>
+
+<p>而在x86处理器中，有三种方法可以实现实现StoreLoad屏障的效果，分别为：</p>
+<ul>
+<li>mfence指令：上文提到过，能实现全能型屏障，具备lfence和sfence的能力。</li>
+<li>cpuid指令：cpuid操作码是一个面向x86架构的处理器补充指令，它的名称派生自CPU识别，作用是允许软件发现处理器的详细信息。</li>
+<li>lock指令前缀：总线锁。lock前缀只能加在一些特殊的指令前面。</li>
+</ul>
+<p>实际上HotSpot关于volatile的实现就是使用的lock指令，只在volatile标记的地方加上带lock前缀指令操作，并没有参照JMM规范的屏障设计而使用对应的mfence指令。</p>
+<p>加上<code>-XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly -Xcomp</code>JVM参数再次执行main方法，在打印的汇编码中，我们也可以看到有一个<code>lock addl $0x0,(%rsp)</code>的操作。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/29e8271dbebe4e0894d0bd16fc4c12fd~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210114232809107" width="90%;" />
+</div>
+
+<p>在源码中也可以得到验证：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dabe5280f5b14de298ce9eecd2d54ade~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210116195404080" width="95%;" />
+</div>
+
+<p><code>lock addl $0x0,(%rsp)</code>后面的<code>addl $0x0,(%rsp)</code>其实是一个空操作。add是加的意思，0x0是16进制的0，rsp是一种类型寄存器，合起来就是把寄存器的值加0，加0是不是等于什么都没有做？这段汇编码仅仅是lock指令的一个载体而已。其实上文也有提到过，lock前缀只能加在一些特殊的指令前面，add就是其中一个指令。</p>
+<p>至于Hotspot为什么要使用lock指令而不是mfence指令，按照我的理解，其实就是省事，实现起来简单。因为lock功能过于强大，不需要有太多的考虑。而且lock指令优先锁缓存行，在性能上，lock指令也没有想象中的那么差，mfence指令更没有想象中的好。所以，使用lock是一个性价比非常高的一个选择。而且，lock也有对可见性的语义说明。</p>
+<p>在《IA-32架构软件开发人员手册》的指令表中找到lock：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7c79b6e4978d47f296b805ae286c960e~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210115202247131" width="90%;" />
+</div>
+
+<p>我不打算在这里深入阐述lock指令的实现原理和细节，这很容易陷入堆砌技术术语中，而且也超出了本文的范围，有兴趣的可以去看看《IA-32架构软件开发人员手册》。</p>
+<p>我们只需要知道lock的这几个作用就可以了：</p>
+<ul>
+<li>确保后续指令执行的原子性。在Pentium及之前的处理器中，带有lock前缀的指令在执行期间会锁住总线，使得其它处理器暂时无法通过总线访问内存，很显然，这个开销很大。在新的处理器中，Intel使用缓存锁定来保证指令执行的原子性，缓存锁定将大大降低lock前缀指令的执行开销。</li>
+<li>禁止该指令与前面和后面的读写指令重排序。</li>
+<li>把写缓冲区的所有数据刷新到内存中。</li>
+</ul>
+<p>总结来说，就是lock指令既保证了可见性也保证了原子性。</p>
+<p>重要的事情再说一遍，是lock指令既保证了可见性也保证了原子性，和什么缓冲一致性协议啊，MESI什么的没有一点关系。</p>
+<p>为了不让你把缓存一致性协议和JMM混淆，在前面的文章中，我特意没有提到过缓存一致性协议，因为这两者本不是一个维度的东西，存在的意义也不一样，这一部分，我们下次再聊。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>全文重点是围绕volatile的可见性和有序性展开的，其中花了不少的部分篇幅描述了一些计算机底层的概念，对于读者来说可能过于无趣，但如果你能认真看完，我相信你或多或少也会有一点收获。</p>
+<p>不去深究，volatile只是一个普通的关键字。深入探讨，你会发现volatile是一个非常重要的知识点。volatile能将软件和硬件结合起来，想要彻底弄懂，需要深入到计算机的最底层。但如果你做到了。你对Java的认知一定会有进一步的提升。</p>
+<p>只把眼光放在Java语言，似乎显得非常局限。发散到其他语言，C语言，C++里面也都有volatile关键字。我没有看过C语言，C++里面volatile关键字是如何实现的，但我相信底层的原理一定是相通的。</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>本着对每一篇发出去的文章负责的原则，文中涉及知识理论，我都会尽量在官方文档和权威书籍找到并加以验证。但即使这样，我也不能保证文中每个点都是正确的，如果你发现错误之处，欢迎指出，我会对其修正。</p>
+<p>创作不易，你的正反馈对我来说非常重要！点个赞，点个再看，点个关注甚至评论区发送一条666都是对我最大的支持！</p>
+<p>我是CoderW，一个普通的程序员。</p>
+<p>谢谢你的阅读，我们下期再见！</p>
+<blockquote>
+<p>个人公众号“CoderW”，欢迎并十分感谢你的关注</p>
+</blockquote>
+<hr>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>JSR-133: <a target="_blank" rel="noopener" href="http://gee.cs.oswego.edu/dl/jmm/cookbook.html">http://gee.cs.oswego.edu/dl/jmm/cookbook.html</a></li>
+<li>《Java并发编程的艺术》</li>
+<li>《深入理解Java虚拟机》第三版</li>
+<li>《IA-32+架构软件开发人员手册》</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>深入汇编指令解析Java关键字volatile</p><p><a href="https://www.wangheng.online/volatile/">https://www.wangheng.online/volatile/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>CoderW</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-04-09</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-04-09</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/Java/">Java</a><a class="link-muted mr-2" rel="tag" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a></div><div class="sharethis-inline-share-buttons"></div><script src="https://platform-api.sharethis.com/js/sharethis.js#property=606f03a4e898f60018871524&amp;product=inline-share-buttons" defer></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/zgc/"><span class="level-item">来自未来的技术——ZGC垃圾回收期</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="SOHUCS" sid="volatile/"></div><script charset="utf-8" src="https://changyan.sohu.com/upload/changyan.js"></script><script>window.changyan.api.config({appid: 'cyvoz8M64',conf: 'prod_3d7fb25c3f66b9a10235d26d624c8119'});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1"><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">3</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">3</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">5</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">关注我</a></div><div class="level is-mobile is-multiline"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="tags"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag">1</span></a></div></div></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div><div class="column column-right is-4-tablet is-4-desktop is-3-widescreen is-hidden-touch is-hidden-desktop-only order-3"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#volatile是什么"><span class="level-left"><span class="level-item">1</span><span class="level-item">volatile是什么</span></span></a></li><li><a class="level is-mobile" href="#可见性"><span class="level-left"><span class="level-item">2</span><span class="level-item">可见性</span></span></a></li><li><a class="level is-mobile" href="#重排序"><span class="level-left"><span class="level-item">3</span><span class="level-item">重排序</span></span></a></li><li><a class="level is-mobile" href="#有序性"><span class="level-left"><span class="level-item">4</span><span class="level-item">有序性</span></span></a></li><li><a class="level is-mobile" href="#原理"><span class="level-left"><span class="level-item">5</span><span class="level-item">原理</span></span></a></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">6</span><span class="level-item">总结</span></span></a></li><li><a class="level is-mobile" href="#写在最后"><span class="level-left"><span class="level-item">7</span><span class="level-item">写在最后</span></span></a></li><li><a class="level is-mobile" href="#参考资料"><span class="level-left"><span class="level-item">8</span><span class="level-item">参考资料</span></span></a></li></ul></div></div><style>#toc .menu-list > li > a.is-active + .menu-list { display: block; }#toc .menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget" data-type="recent-posts"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/volatile/"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="深入汇编指令解析Java关键字volatile"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-08T19:17:05.000Z">2021-04-09</time></p><p class="title"><a href="/volatile/">深入汇编指令解析Java关键字volatile</a></p><p class="categories"><a href="/categories/Java/">Java</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/zgc/"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image" alt="来自未来的技术——ZGC垃圾回收期"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-08T19:09:38.000Z">2021-04-09</time></p><p class="title"><a href="/zgc/">来自未来的技术——ZGC垃圾回收期</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/resou/"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7b83305982664ceaa33c4b3af0934d5b~tplv-k3u1fbpfcp-zoom-1.image" alt="用爬虫分析了2020年一年的热搜，我发现了什么？"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-08T07:44:32.000Z">2021-04-08</time></p><p class="title"><a href="/resou/">用爬虫分析了2020年一年的热搜，我发现了什么？</a></p><p class="categories"><a href="/categories/Python/">Python</a></p></div></article></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="编程之路" height="28"></a><p class="is-size-7">Powered by <span> CoderW &copy; 2021 </span><br><span id="busuanzi_container_site_uv">共<span id="busuanzi_value_site_uv">0</span>个访客, <span id="busuanzi_value_site_pv">0</span>次访问</span></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script>if (true == true) {
+			$(document).ready(function () {
+				var int = setInterval(fixCount, 100);
+				var uvOffSet = parseInt(100);
+				var pvOffSet = parseInt(200);
+				
+				function fixCount() {
+					var realUv = parseInt($("#busuanzi_value_site_uv").html())
+					var realPv = parseInt($("#busuanzi_value_site_pv").html())
+					if ($("#busuanzi_container_site_uv").css("display") != "none" && realUv > 0) {
+						clearInterval(int);
+						$("#busuanzi_value_site_uv").html(realUv + uvOffSet);
+						$("#busuanzi_value_site_pv").html(realPv + pvOffSet);
+					}
+				}
+			});
+		}</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js" defer></script><script>window.addEventListener("load", () => {
+      window.cookieconsent.initialise({
+        type: "info",
+        theme: "edgeless",
+        static: false,
+        position: "bottom-left",
+        content: {
+          message: "此网站使用Cookie来改善您的体验。",
+          dismiss: "知道了！",
+          allow: "允许使用Cookie",
+          deny: "拒绝",
+          link: "了解更多",
+          policy: "Cookie政策",
+          href: "https://www.cookiesandyou.com/",
+        },
+        palette: {
+          popup: {
+            background: "#edeff5",
+            text: "#838391"
+          },
+          button: {
+            background: "#4b81e8"
+          },
+        },
+      });
+    });</script><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
