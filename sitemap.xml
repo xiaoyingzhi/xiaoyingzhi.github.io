@@ -16,70 +16,70 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/finalStatic/</loc>
+    <loc>https://www.wangheng.online/f76d216a.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/javalife/</loc>
+    <loc>https://www.wangheng.online/f1dd993a.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/zgc/</loc>
+    <loc>https://www.wangheng.online/5f67733.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/string/</loc>
+    <loc>https://www.wangheng.online/4bada684.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/stringPool/</loc>
+    <loc>https://www.wangheng.online/d58084d9.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/h2bug/</loc>
+    <loc>https://www.wangheng.online/b7ae85a9.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/threadLocal/</loc>
+    <loc>https://www.wangheng.online/9e29d5b3.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/javathread/</loc>
+    <loc>https://www.wangheng.online/7abeb6e4.html</loc>
     
     <lastmod>2021-04-09</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/volatile/</loc>
+    <loc>https://www.wangheng.online/8a98c2c7.html</loc>
     
     <lastmod>2021-04-08</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/resou/</loc>
+    <loc>https://www.wangheng.online/e2fb80c8.html</loc>
     
     <lastmod>2021-04-08</lastmod>
     
@@ -93,6 +93,20 @@
     <priority>1.0</priority>
   </url>
 
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/Java/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/JVM/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
   
   <url>
     <loc>https://www.wangheng.online/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
@@ -123,14 +137,7 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/tags/Java/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/JVM/</loc>
+    <loc>https://www.wangheng.online/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -151,13 +158,6 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://www.wangheng.online/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
@@ -165,6 +165,13 @@
   </url>
   
 
+  
+  <url>
+    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
   
   <url>
     <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
@@ -181,7 +188,7 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <loc>https://www.wangheng.online/categories/Java/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -189,13 +196,6 @@
   
   <url>
     <loc>https://www.wangheng.online/categories/Python/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/categories/Java/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
