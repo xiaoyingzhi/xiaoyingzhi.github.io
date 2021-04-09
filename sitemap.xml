@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.wangheng.online/archives/b7ae85a9.html</loc>
+    
+    <lastmod>2021-04-09</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/archives/f76d216a.html</loc>
+    
+    <lastmod>2021-04-09</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/archives/9e29d5b3.html</loc>
     
     <lastmod>2021-04-09</lastmod>
@@ -58,20 +72,6 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/archives/b7ae85a9.html</loc>
-    
-    <lastmod>2021-04-09</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/archives/f76d216a.html</loc>
-    
-    <lastmod>2021-04-09</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://www.wangheng.online/google66b7c51d69c15634.html</loc>
     
     <lastmod>2021-04-09</lastmod>
@@ -103,27 +103,6 @@
   
   <url>
     <loc>https://www.wangheng.online/tags/JVM/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/H2/</loc>
-    <lastmod>2021-04-09</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/Bug%E5%AE%9A%E4%BD%8D/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -164,17 +143,31 @@
     <priority>0.6</priority>
   </url>
   
-
-  
   <url>
-    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <loc>https://www.wangheng.online/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
+    <loc>https://www.wangheng.online/tags/H2/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/Bug%E5%AE%9A%E4%BD%8D/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+
+  
+  <url>
+    <loc>https://www.wangheng.online/categories/JVM/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -196,6 +189,13 @@
   
   <url>
     <loc>https://www.wangheng.online/categories/Python/</loc>
+    <lastmod>2021-04-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-04-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
