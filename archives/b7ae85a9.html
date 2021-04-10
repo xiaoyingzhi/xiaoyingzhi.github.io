@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>一个H2数据库源码Bug的定位之旅 - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"><meta property="og:type" content="blog"><meta property="og:title" content="一个H2数据库源码Bug的定位之旅"><meta property="og:url" content="https://www.wangheng.online/archives/b7ae85a9.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-02-11T03:40:25.000Z"><meta property="article:modified_time" content="2021-04-09T09:35:28.069Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="数据库"><meta property="article:tag" content="H2"><meta property="article:tag" content="Bug定位"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/b7ae85a9.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-02-11T03:40:25.000Z","dateModified":"2021-04-09T09:35:28.069Z","author":{"@type":"Person","name":"CoderW"},"description":"整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"}</script><link rel="canonical" href="https://www.wangheng.online/archives/b7ae85a9.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-02-11T03:40:25.000Z" title="2021-02-11T03:40:25.000Z">2021-02-11</time>发表</span><span class="level-item">24 分钟读完 (大约3559个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/b7ae85a9.html#comment-container"><span class="display-none-class">d43babed9f3f3a725630e17b5568ec03</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="d43babed9f3f3a725630e17b5568ec03">99+</span>  </a></div></div><h1 class="title is-3 is-size-4-mobile">一个H2数据库源码Bug的定位之旅</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/b7ae85a9.html" target="_blank">https://www.wangheng.online/archives/b7ae85a9.html</a></p></div><div class="content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。</p>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>一个H2数据库源码Bug的定位之旅 - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"><meta property="og:type" content="blog"><meta property="og:title" content="一个H2数据库源码Bug的定位之旅"><meta property="og:url" content="https://www.wangheng.online/archives/b7ae85a9.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-02-11T03:40:25.000Z"><meta property="article:modified_time" content="2021-04-10T11:44:36.825Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="数据库"><meta property="article:tag" content="H2"><meta property="article:tag" content="Bug定位"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/b7ae85a9.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-02-11T03:40:25.000Z","dateModified":"2021-04-10T11:44:36.825Z","author":{"@type":"Person","name":"CoderW"},"description":"整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。需要介绍一下H2和FitNesse，因为这是整篇文章的基础。"}</script><link rel="canonical" href="https://www.wangheng.online/archives/b7ae85a9.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-02-11T03:40:25.000Z" title="2021-02-11T03:40:25.000Z">2021-02-11</time>发表</span><span class="level-item">24 分钟读完 (大约3559个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/b7ae85a9.html#comment-container"><span class="display-none-class">d43babed9f3f3a725630e17b5568ec03</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="d43babed9f3f3a725630e17b5568ec03">99+</span>  </a></div></div><h1 class="title is-3 is-size-4-mobile">一个H2数据库源码Bug的定位之旅</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/b7ae85a9.html" target="_blank">https://www.wangheng.online/archives/b7ae85a9.html</a></p></div><div class="content"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>整篇文章主要讲的是“遇到了一个什么样的Bug以及怎么定位找到它并解决的”，涉及到的知识点比较简单。</p>
 <p>需要介绍一下H2和FitNesse，因为这是整篇文章的基础。</p>
 <p>别紧张，只是简单了解一下。知道它们是个什么东西就行了。  </p>
 <h2 id="H2数据库"><a href="#H2数据库" class="headerlink" title="H2数据库"></a>H2数据库</h2><p>H2数据库是什么？我们先看一下GitHub上介绍：</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/37b53415526545fe9ad65f918a61c58d~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211130212138" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/37b53415526545fe9ad65f918a61c58d~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>以我蹩脚的英语，可以知道有这几个特点：</p>
@@ -23,7 +23,7 @@
 <p>那么，有没有一种工具，能让开发同学只关注开发，测试同学也能测试到内层代码呢？</p>
 <p>有的！FitNesse就可以做到。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211130212138" style="zoom:90%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/5aa571f8966b4ce5a13b7c63f368d97d~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:90%;" />
 </div>
 <p align="center">FitNesse架构图（来源：https://www.testwo.com/blog/4805）</p>
 
@@ -40,11 +40,11 @@
 <p><code>TRUNCATE</code>作用是清空表或者说是截断表，会清空表中的所有行，但表结构及其约束、索引等保持不变，会重置表的自增值；</p>
 </blockquote>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f1f8e14286be45589862a06707525212~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210002528507" style="zoom: 50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f1f8e14286be45589862a06707525212~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom: 50%;" />
 </div>
 
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2693543cf6a94e4e97b76af0db4da857~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210110432989" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2693543cf6a94e4e97b76af0db4da857~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>理论上只要清空所有的缓存，重置所有的表，就不会有数据相互干扰的问题。</p>
@@ -58,13 +58,13 @@
 <p>所以我直接就排除了缓存和清空表没有清空干净的问题。这个“想当然”为后面埋下了伏笔，很关键，记住，这要考的！</p>
 <h3 id="模拟失败用例"><a href="#模拟失败用例" class="headerlink" title="模拟失败用例"></a>模拟失败用例</h3><p>第一步，我先讲测试用例抽象到本地。写了很简单的一段代码，模拟了同时跑了两个测试用例，模拟了线上用例出错的情况。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8a2f3024f69d4b538904a51a88acdcf3~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210234809114" style="zoom: 33%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8a2f3024f69d4b538904a51a88acdcf3~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom: 33%;" />
 </div>
 
 <p>从上面的结果，可以证明：<code>TRUNCATE</code>命令是能够重置主键id的</p>
 <p>而上官方文档也说的很清楚，<code>TRUNCATE</code>命令是可以重置自增主键的。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/502bbd1a884a465f935e3575155f45bf~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210235442162" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/502bbd1a884a465f935e3575155f45bf~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <h3 id="Drop"><a href="#Drop" class="headerlink" title="Drop"></a>Drop</h3><blockquote>
@@ -73,7 +73,7 @@
 <p>上面的试验让我将矛头转向了缓存，但在我仔仔细细检查了缓存之后，已经可以确定所有的缓存都被清掉了。</p>
 <p>这让我怀疑还是因为表的问题。于是乎，我尝试了一个很蠢的方法——每个用例之前，用<code>DROP</code>命令删掉所有的表，然后重新建表。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/69721255246d4c9782f5208730cfbbdd~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210171124481" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/69721255246d4c9782f5208730cfbbdd~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>以试一试的想法重新跑了测试用例，没想到所有的测试用例都能跑通了。</p>
@@ -82,7 +82,7 @@
 <p>我第一时间想法就是空间换时间，把使用过的表放到一个容器里面，每个测试用例之前只需要遍历容器删除使用过的表，然后重新建表。</p>
 <p>在一个有几百个表的测试环境里面，每个测试用例可能用到的表最多也就10几个，这样下来能省下来一大部分的删表与建表的时间。而消耗的额外内存几乎可以忽略不计。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0c67abaab7bd4c1e8954bfe4b4eff1ce~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210172257311" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0c67abaab7bd4c1e8954bfe4b4eff1ce~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>在使用这个方法调整了之后，跑1000个测试用例耗费的时间只有调整之前的一半了，效果是非常明显的。</p>
@@ -91,7 +91,7 @@
 <p>真是太愚蠢了！</p>
 <p>因为H2的一些命令和Oracle相似，于是我在<code>TRUNCATE</code>命令之后，加了一条<code>ALTER TABLE &#123;表名&#125; ALTER COLUMN &#123;需要重置的列名&#125; RESTART WITH 1</code>的命令，将每一个表的自增主键重设为1。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/06895a7673b64e259c05b8ac79c9f538~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201210173939124" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/06895a7673b64e259c05b8ac79c9f538~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>这样改了之后，速度并没有比以前快，唯一好的一点就是不需要去单独维护使用过的表了，代码倒是精简了不少。</p>
@@ -108,7 +108,7 @@
 <p>等等！每个命令都是一个对象？那是不是<code>TRUNCATE</code>也对应一个类呢？</p>
 <p>好家伙！还真被我找到了一个叫<code>TruncateTable</code>的类。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/987dc17b171146889ec9eeea63ed1697~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211013128657" style="zoom:44%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/987dc17b171146889ec9eeea63ed1697~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:44%;" />
 </div>
 
 <p>对数据库了解的人，上面这段代码并不难读懂。里面的Sequence需要给不了解一下Oracle的同学讲一下。</p>
@@ -121,7 +121,7 @@
 </ul>
 <p>知道了Sequence是干什么用的之后，我们再来回看这段代码：</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ae5b4b1c0785467291fff73156ed4bb5~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211014314962" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ae5b4b1c0785467291fff73156ed4bb5~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <ul>
@@ -133,11 +133,11 @@
 <p>好的，我们 重跑一下上面模拟的测试用例：</p>
 <p>先插入两条数据，然后<code>TRUNCATE</code>表看着里面干了什么。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/918d7d2ac4c64851b266e464fe6f87bd~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211020744024" style="zoom: 93%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/918d7d2ac4c64851b266e464fe6f87bd~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom: 93%;" />
 </div>
 
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f2f061cc3b7b4540ad681bde6ae5451e~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211021105591" style="zoom: 33%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f2f061cc3b7b4540ad681bde6ae5451e~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom: 33%;" />
 </div>
 
 <p>按照这句话我们推理一下：<strong>如果自增列的当前值不等于最小值，就重置，否则没有这个必要。</strong></p>
@@ -146,7 +146,7 @@
 <p>所以 min != currentValue</p>
 <p>所以需要重置自增列，将自增列对应的Sequence的value设置成min，也是就1。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8f521c5d30b34db28b794111e6615820~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211023005761" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8f521c5d30b34db28b794111e6615820~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <hr>
@@ -160,7 +160,7 @@
 <p><strong>插入1条数据，<code>TRUNCATE</code>表，将value从2重置为1</strong></p>
 <p>但是实际上插入一条数据再<code>TRUNCATE</code>表会怎么样呢？我们Debug一下：</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6445779618674694b960f29191c00bfb~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211023620421" style="zoom: 33%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6445779618674694b960f29191c00bfb~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom: 33%;" />
 </div>
 
 <p>因为 currentValue = value - increment且Value = 2，increment = 1，minValue = 1</p>
@@ -171,30 +171,30 @@
 <p>H2，你不对劲！你不讲武德啊！将一个Bug埋得这么深！</p>
 <h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>碰到这个的Bug谁顶得住啊，于是我查看了GitHub上最新的代码。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/68a04bdf197447c49cf2aef0846850d0~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211030211899" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/68a04bdf197447c49cf2aef0846850d0~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>好家伙！已经修复了这个问题，直接把那个有Bug的那个判断去掉了。</p>
 <p>不对劲啊，我们项目使用的就是最新版的H2啊。</p>
 <p>进到mvnrepository一看，“打开了mvnrepository，发版记录停步去年的深秋”，这真是H2版本的《灰色头像》啊。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b211119c515447fab22b15fc2f3b9ed6~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211024606308" style="zoom:33%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b211119c515447fab22b15fc2f3b9ed6~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:33%;" />
 </div>
 
 <p>最新版本是19年十月份发的，现在都已经20年12月了，都一年多了，还不发新版？</p>
 <p>于是乎，我跑到GitHub上提了一个<code>issue</code>指出了这个问题，并且希望作者能够早日发布新版。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/02ab2e64f33648dc8205149ad423e1a9~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211125903344" style="zoom:33%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/02ab2e64f33648dc8205149ad423e1a9~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:33%;" />
 </div>
 
 <p>作者第二天回复了我，大致意思就是说这个问题已经解决了，就不需要去管它了，然后把我的issue关闭了，并甩给了我了一个关于新版发布计划的讨论地址。</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3b28fa35a194c6597fb0e6cb3b69f19~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211125928395" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3b28fa35a194c6597fb0e6cb3b69f19~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>大致看了一下他们的讨论，作者的意思总结来说就是新版有很多兼容处理没有做好，所以最近发布新版没戏！</p>
 <div align=center>
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/957617c572ab472b8955c9a46e835a36~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20201211130028198" style="zoom:50%;" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/957617c572ab472b8955c9a46e835a36~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
 </div>
 
 <p>我提的issue地址：<a target="_blank" rel="noopener" href="https://github.com/h2database/h2database/issues/2978">https://github.com/h2database/h2database/issues/2978</a></p>
@@ -211,7 +211,7 @@
 <p>文章中涉及代码：<a target="_blank" rel="noopener" href="https://github.com/xiaoyingzhi/blog">https://github.com/xiaoyingzhi/blog</a></p>
 <p>FitNesse官网：<a target="_blank" rel="noopener" href="http://www.fitnesse.org/">http://www.fitnesse.org</a></p>
 <p>H2官方文档：<a target="_blank" rel="noopener" href="https://h2database.com/html/main.html">https://h2database.com/html/main.html</a></p>
-</div><div class="article-licensing box"><div class="licensing-title"><p>一个H2数据库源码Bug的定位之旅</p><p><a href="https://www.wangheng.online/archives/b7ae85a9.html">https://www.wangheng.online/archives/b7ae85a9.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-02-11</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-04-09</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/f76d216a.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">你知道Java中final和static修饰的变量是在什么时候赋值的吗？</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/f1dd993a.html"><span class="level-item">网瘾少年的编程之路</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
+</div><div class="article-licensing box"><div class="licensing-title"><p>一个H2数据库源码Bug的定位之旅</p><p><a href="https://www.wangheng.online/archives/b7ae85a9.html">https://www.wangheng.online/archives/b7ae85a9.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-02-11</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-04-10</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/f76d216a.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">你知道Java中final和static修饰的变量是在什么时候赋值的吗？</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/f1dd993a.html"><span class="level-item">网瘾少年的编程之路</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
             var gitalk = new Gitalk({
             language:'zh-CN',
             id: 'd43babed9f3f3a725630e17b5568ec03',
