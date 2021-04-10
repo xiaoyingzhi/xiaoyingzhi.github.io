@@ -37,7 +37,7 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/album/index.html</loc>
+    <loc>https://www.wangheng.online/friend/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
     
@@ -51,7 +51,7 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/friend/index.html</loc>
+    <loc>https://www.wangheng.online/album/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
     
@@ -144,13 +144,6 @@
 
   
   <url>
-    <loc>https://www.wangheng.online/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
-    <lastmod>2021-04-10</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://www.wangheng.online/tags/Java/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
@@ -159,6 +152,13 @@
   
   <url>
     <loc>https://www.wangheng.online/tags/JVM/</loc>
+    <lastmod>2021-04-10</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -216,14 +216,14 @@
 
   
   <url>
-    <loc>https://www.wangheng.online/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
+    <loc>https://www.wangheng.online/categories/JVM/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <loc>https://www.wangheng.online/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
