@@ -12270,7 +12270,7 @@ textarea {
   font-family: 'Monda', "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 body {
-  background: url("/img/background.png");
+  background: none;
 }
 .body_hot_comment .comment-content .card-comment-item .ava,
 .media-left,
