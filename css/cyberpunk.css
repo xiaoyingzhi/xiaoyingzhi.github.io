@@ -12270,7 +12270,7 @@ textarea {
   font-family: 'Monda', "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 body {
-  background: url("/img/background.png");
+  background: none;
 }
 .img-x {
   position: relative;
