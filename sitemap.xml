@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.wangheng.online/media/index.html</loc>
+    
+    <lastmod>2021-04-10</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/archives/5f67733.html</loc>
     
     <lastmod>2021-04-10</lastmod>
@@ -16,14 +23,14 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/music/index.html</loc>
+    <loc>https://www.wangheng.online/message/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
     
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/message/index.html</loc>
+    <loc>https://www.wangheng.online/music/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
     
@@ -37,13 +44,6 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/album/index.html</loc>
-    
-    <lastmod>2021-04-10</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://www.wangheng.online/friend/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
@@ -51,7 +51,7 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/media/index.html</loc>
+    <loc>https://www.wangheng.online/album/index.html</loc>
     
     <lastmod>2021-04-10</lastmod>
     
@@ -158,14 +158,14 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
+    <loc>https://www.wangheng.online/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</loc>
+    <loc>https://www.wangheng.online/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -223,14 +223,14 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
+    <loc>https://www.wangheng.online/categories/Java/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/Java/</loc>
+    <loc>https://www.wangheng.online/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
     <lastmod>2021-04-10</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
