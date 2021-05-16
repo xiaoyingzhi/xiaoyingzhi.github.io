@@ -116,6 +116,20 @@
 
   
   <url>
+    <loc>https://www.wangheng.online/tags/Java/</loc>
+    <lastmod>2021-05-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/JVM/</loc>
+    <lastmod>2021-05-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
@@ -137,20 +151,6 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/tags/Java/</loc>
-    <lastmod>2021-05-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/JVM/</loc>
-    <lastmod>2021-05-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://www.wangheng.online/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
@@ -159,13 +159,6 @@
   
   <url>
     <loc>https://www.wangheng.online/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/</loc>
-    <lastmod>2021-05-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/MySQL/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -186,6 +179,13 @@
   </url>
   
   <url>
+    <loc>https://www.wangheng.online/tags/MySQL/</loc>
+    <lastmod>2021-05-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
@@ -195,14 +195,14 @@
 
   
   <url>
-    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
+    <loc>https://www.wangheng.online/categories/JVM/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -223,14 +223,14 @@
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/MySQL/</loc>
+    <loc>https://www.wangheng.online/categories/Python/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/Python/</loc>
+    <loc>https://www.wangheng.online/categories/MySQL/</loc>
     <lastmod>2021-05-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
