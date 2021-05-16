@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>你知道Java中final和static修饰的变量是在什么时候赋值的吗？ - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="我们先分析一下这个问题：深入Java虚拟机有一句是“ConstantValue属性的作用是通知虚拟机自动为静态变量赋值，只有被static关键字修饰的变量才可以使用这项属性。但为什么private final a &amp;#x3D; 10也可以被赋值？”我翻阅了《深入理解Java虚拟机》第二版，在第191页，确实有前面那句话"><meta property="og:type" content="blog"><meta property="og:title" content="你知道Java中final和static修饰的变量是在什么时候赋值的吗？"><meta property="og:url" content="https://www.wangheng.online/archives/f76d216a.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="我们先分析一下这个问题：深入Java虚拟机有一句是“ConstantValue属性的作用是通知虚拟机自动为静态变量赋值，只有被static关键字修饰的变量才可以使用这项属性。但为什么private final a &amp;#x3D; 10也可以被赋值？”我翻阅了《深入理解Java虚拟机》第二版，在第191页，确实有前面那句话"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f7bb3ca2426a425da2cd4ababbd70a39~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-02-20T03:41:14.000Z"><meta property="article:modified_time" content="2021-05-16T07:39:48.261Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="Java"><meta property="article:tag" content="JVM"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f7bb3ca2426a425da2cd4ababbd70a39~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/f76d216a.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-02-20T03:41:14.000Z","dateModified":"2021-05-16T07:39:48.261Z","author":{"@type":"Person","name":"CoderW"},"description":"我们先分析一下这个问题：深入Java虚拟机有一句是“ConstantValue属性的作用是通知虚拟机自动为静态变量赋值，只有被static关键字修饰的变量才可以使用这项属性。但为什么private final a &#x3D; 10也可以被赋值？”我翻阅了《深入理解Java虚拟机》第二版，在第191页，确实有前面那句话"}</script><link rel="canonical" href="https://www.wangheng.online/archives/f76d216a.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-02-20T03:41:14.000Z" title="2021-02-20T03:41:14.000Z">2021-02-20</time>发表</span><span class="level-item">9 分钟读完 (大约2983个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/f76d216a.html#comment-container"><span class="display-none-class">8e76b06efc0e3f5c47a106838096734f</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="8e76b06efc0e3f5c47a106838096734f">99+</span>  </a></div></div><h1 class="title is-3 is-size-4-mobile">你知道Java中final和static修饰的变量是在什么时候赋值的吗？</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/f76d216a.html" target="_blank">https://www.wangheng.online/archives/f76d216a.html</a></p></div><div class="content"><div id="vip-container"><h2 id="开始"><a href="#开始" class="headerlink" title="开始"></a>开始</h2><p>一位朋友在群里问了这样一个问题：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e6643ac918514258ace36cf91bcc268c~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:70%;" />
+</div>
+
+<p>本着乐于助人的想法，我当时给出的回答：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3879216c677e417da3ee3e5121cbad42~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:60%;" />
+</div>
+
+<p>后来我总觉得哪里不对劲，仔细翻阅了《Java虚拟机规范》和《深入理解Java虚拟机》这一部分的内容，害！发现自己理解的有问题。</p>
+<p>因为自己的理解出错而误导了别人，实在是让我万分羞愧！</p>
+<p>自己菜但是不能误导别人，于是我加了这位朋友的好友，向这位朋友表达了歉意，这位朋友也非常随和，对此表示理解。</p>
+<p>今天讨论的问题就是从这个故事开始的。</p>
+<h2 id="final修饰的实例变量"><a href="#final修饰的实例变量" class="headerlink" title="final修饰的实例变量"></a>final修饰的实例变量</h2><p>我们先分析一下这个问题：<strong>深入Java虚拟机有一句是“ConstantValue属性的作用是通知虚拟机自动为静态变量赋值，只有被static关键字修饰的变量才可以使用这项属性。但为什么private final a = 10也可以被赋值</strong>？”</p>
+<p>我翻阅了《深入理解Java虚拟机》第二版，在第191页，确实有前面那句话</p>
+<div align="center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7b59fd6af0a94de88ccf8bc1687e799e~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:60%;" />
+</div>
+
+<p>书中说的很清楚，ConstantValue属性的作用是通知虚拟机自动为静态变量赋值。</p>
+<p>那就意味着只有static修饰的类变量才会在class文件中对应的字段表加上ConstantValue属性吗？</p>
+<p>答案是否定的。用final修饰的实例变量，编译成class文件的时候，对应的字段表也有可能会加上ConstantValue属性。</p>
+<p>注意，我这里用了“可能”这两个字，因为这是有条件的。哪些情况会有ConstantValue属性呢？</p>
+<p>我们写一段代码，列举一下用final修饰的实例变量的几种情况，编译之后，然后用<code>javap -verbose</code>命令查看Java编译器为我们生成的字节码。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d08f01c432204677b6516bd70d861f9e~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>我们可以看到，在字段表集合里面有四个字段表，分表对应这a,b,c,d,e五个实例属性，他们都带有<code>ACC_PUBLIC(public)</code>和<code>ACC_FINAL(final)</code>的访问标志。但只有a和b对应的字段表带有ConstantValue属性。我们总结一下：</p>
+<p><strong>用final修饰不是在构造方法赋值的String类型或者基本类型成员变量，编译成字节码文件时，对应的字段表也会带有ConstantValue属性。</strong></p>
+<p>这个结论不和《深入理解Java虚拟机》冲突吗？</p>
+<p>于是我翻阅了<strong>JVM Spec Java SE 8Edition</strong>（周志明前辈是翻译过，书名《Java虚拟机规范》，但是我手里没有翻译后的中文版），在4.7.2部分我找到了这样一句话：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a2fbca2571514d64b87b6bb0a5e4785f~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>书中说的很清楚，如果field_info（字段表）表示的非静态字段包含了ConstantValue属性，那么这个ConstantValue属性会被Java虚拟机所忽略。也就是说，对于非静态字段，就算你编译器加上了ConstantValue属性，JVM也会忽略掉，你加不加结果是一样的。</p>
+<p>看完《Java虚拟机规范》里面的说明，再回来看《深入理解Java虚拟机》里面的这句话：</p>
+<p><strong>ConstantValue属性的作用是通知虚拟机自动为静态变量赋值，只有被static关键字修饰的类变量才可以使用这项属性。</strong></p>
+<p>作者的这句话的前半句没有什么争议，但我觉得后半句的表述的不太明确，容易造成误解。</p>
+<p>以我的理解，应该是“<strong>只有被static关键字修饰的类变量才可以使用这项属性来进行初始化，否则使用这项属性也会被JVM忽略掉</strong>”</p>
+<p>好了，我们再回到那位朋友问的问题：<strong>为什么private final a = 10也可以被赋值？</strong></p>
+<p>首先，这个问题的本身就问的不太准确。我理解这位朋友真正想问的是“为什么private final a = 10也可以通过<strong>ConstantValue属性</strong>的形式赋值？”</p>
+<p>我觉得这是一个很好的问题，这位朋友通过实验发现用final修饰的实例变量对应的字段表有<strong>ConstantValue属性</strong>，结合《深入理解Java虚拟机》，他认为a是通过<strong>ConstantValue属性</strong>让虚拟机知道然后为其赋值的。最后他发现和书中冲突，于是提出了上文的这个问题。</p>
+<p>这样的思路有问题吗？我觉得是没有问题的。</p>
+<p>不过这样的理解是对的吗？显然是不对的。</p>
+<p>因为虚拟机规范是这样规范的。对于非静态字段，ConstantValue属性是不会生效的。</p>
+<p>至于为什么要这样设计，功力不够的我暂时无法理解设计者的想法。</p>
+<p>那单独用final修饰的实例变量到底是在什么时候赋值的呢？</p>
+<p>这个问题也不难回答，看一下字节码就清楚了。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3aa13f96ba414bbfac801029df5d3764~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>通过查看字节码，我们可以看到有一个<init>方法，右边是它的字节码指令。</p>
+<p>什么是<init>方法？我们看看Java虚拟机规范上的解释：</p>
+<div align = "center">
+
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c57dff7e6b3d475b8f437a47f7ce3ecf~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>我们温习一下这个英语四级短语：appear as</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e8e4a59284c44d30a1a34032a87186e3~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>然后，我们一起翻译一下：在JVM层面上，每一个用Java写的构造方法都表现为实例初始方法，这个方法就是<init>方法。</p>
+<p>记住，这个方法会在实例初始化的时候被调用。</p>
+<p>我们再来看一下<code>putfield</code>这个字节码指令的含义：<code>putfield</code>指令就是为指定的类的实例域赋值的，也就是为实例变量赋值的指令。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f19b1d9982b24053b7ee17e6d93bf3a5~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p><strong>现在我们可以清晰的知道，这些用final修饰实例变量是在实例构造器<init>方法里面赋值的，也就是对象创建的时候赋值。</strong></p>
+<h2 id="static修饰的类变量"><a href="#static修饰的类变量" class="headerlink" title="static修饰的类变量"></a>static修饰的类变量</h2><p>上面讲到ConstantValue属性的作用是通知虚拟机自动为静态变量赋值。</p>
+<p>我们再回过来讲一下静态变量，一个很关键的关键字static。</p>
+<p>在这之前，我需要把类加载的几个过程大致给你讲一下：</p>
+<p>类的生命周期由7个阶段组成，类加载说的是前5个阶段，即加载—&gt;验证—&gt;准备—&gt;解析—&gt;初始化。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8c30da67697a4cefa9e069fc7da366a2~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+<p align="center">类的生命周期图<p>
+
+<p>我们简单过一下这几个阶段：</p>
+<ul>
+<li><p>加载：将字节码所代表的静态存储结构转化为方法区的运行时数据结构。</p>
+</li>
+<li><p>验证：验证字节码格式，确保Class文件的字节流中包含的信息符合当前虚拟机的要求，并且不会危害虚拟机自身的安全。</p>
+</li>
+<li><p><strong>准备：创建类或者接口的静态字段，并为静态变量设置初始值。</strong></p>
+</li>
+<li><p>解析：将常量池内的符号引用替换为直接引用。</p>
+</li>
+<li><p><strong>初始化：执行类构造器<clinit>方法。</strong></p>
+</li>
+</ul>
+<p>类构造器<clinit>方法又是个什么东西呢？</p>
+<p><strong>JVM Spec Java SE 8Edition</strong>这样说道：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b0109826ed1e40149bf022cc790655db~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>说白了，编译器会收集所有静态变量的赋值动作、所有静态代码块，合并产生一个方法，即<clinit>方法。这个方法在类加载的初始化阶段执行。</p>
+<p>而对于类变量（static修饰的），则有两种赋值方式可以选择:</p>
+<ul>
+<li><p>使用ConstantValue属性赋值。</p>
+</li>
+<li><p>在类构造器<clinit>方法中赋值。</p>
+</li>
+</ul>
+<p>目前Oracle公司实现的Javac编译器的选择是：</p>
+<ul>
+<li><p>final+static修饰：使用ConstantValue属性赋值。</p>
+</li>
+<li><p>仅仅使用static修饰：在<clinit>方法中赋值。</p>
+</li>
+</ul>
+<p>需要注意点的是，用生成ConstantValue属性来进行初始化，这个变量必须是基本类型或者java.lang.String类型。</p>
+<p>这是因为Class文件格式的常量类型中只有与基本属性和字符串相对应的字面量，所以就算ConstantValue属性想支持别的类型也无能为力。</p>
+<p>对于这一点，我们也可以通过<code>javap -verbose</code>命令反编译验证一下：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f7bb3ca2426a425da2cd4ababbd70a39~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+
+<h2 id="final-static修饰的常量"><a href="#final-static修饰的常量" class="headerlink" title="final+static修饰的常量"></a>final+static修饰的常量</h2><p>上面我们说过，<clinit>方法是在类加载的出初始化阶段赋值的。</p>
+<p>那static+final修饰的常量是在类加载的那一阶段进行的呢？我们可以看一下JVM规范：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f4617f5e0c5d43abba049284d4bfdabf~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>我们可以看到在JVM规范里面，static+final修饰的常量是在初始化阶段执行<clinit>方法之前执行的。</p>
+<p>咦？我们平时背的不都是在类加载的准备阶段会对普通类属性赋初始值，带有ConstantValue的类属性直接赋值吗？</p>
+<p>《深入理解Java虚拟机》也是这样说的啊？</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6d9e6217f03347c1b476916a69ca565f~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+
+<p>书上是错的吗？不是的，因为《深入理解Java虚拟机》里面讲的具体实现，是基于HotSpot VM讲的。</p>
+<p>确确实实，HotSpot VM就是这么干的，我们也可以在openJdk中找到对应的源码：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2f0f127168b8482c9233a8964c73fa19~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/517006c4220b4178affcd827872a2d27~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:50%;" />
+</div>
+
+<p>看起来，HotSpot VM对基本类型或者字符串类型的常量的赋值确实在准备阶段完成了。</p>
+<p>但一个很关键的点是，仍然在调用<clinit>之前赋值了。</p>
+<p>外界是不会观察到HotSpot VM提前做了这个初始化赋值的，所以是没问题。</p>
+<p>不过要记住的是，规范里明确说了正确的初始化时机是在“初始化（Initialization）”阶段。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li><p>final修饰的实例属性，在实例创建的时候才会赋值。</p>
+</li>
+<li><p>static修饰的类属性，在类加载的准备阶段赋初值，初始化阶段赋值。</p>
+</li>
+<li><p>static+final修饰的String类型或者基本类型常量，JVM规范是在初始化阶段赋值，但是HotSpot VM直接在准备阶段就赋值了。</p>
+</li>
+<li><p>static+final修饰的其他引用类型常量，赋值步骤和第二点的流程是一样的。</p>
+</li>
+</ol>
+<p>还有一点，一定不要把《深入理解Java虚拟机》和《Java虚拟机规范》搞混了。</p>
+<ul>
+<li>《Java虚拟机规范》是翻译的官方JVM规范文档，所有的JVM实现都要遵从规范，但有强制要求的规范和建议的规范。</li>
+<li>《深入理解Java虚拟机》是作者根据自己的理解，结合HotSpot VM的具体实现，为了让读者更容易理解JVM而写的一本书。</li>
+</ul>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>本人才疏学浅，OpenJdk源码也理解的不够透彻。</p>
+<p>文中的一些知识点网上都找不到权威的资料能够证明。</p>
+<p>不过我尽量都基于官方文档展开分析，如果有认识有差错的地方，欢迎指出！我定会在第一时间修改，不误导别人！</p>
+<p>最后，谢谢你的阅读！</p>
+<p>更多精彩，微信公众号“CoderW”，等你一起进步！</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>文章中涉及测试代码：<a target="_blank" rel="noopener" href="https://github.com/xiaoyingzhi/blog">https://github.com/xiaoyingzhi/blog</a></p>
+<p>JVM Spec Java SE 8Edition：<a target="_blank" rel="noopener" href="https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf">https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf</a></p>
+<p>IDEA查看字节码插件：<a target="_blank" rel="noopener" href="https://plugins.jetbrains.com/plugin/9248-jclasslib-bytecode-viewer">https://plugins.jetbrains.com/plugin/9248-jclasslib-bytecode-viewer</a></p>
+<p>《深入理解Java虚拟机》：各大购书平台都可购买，建议购买第三版。</p>
+</div>
+
+			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+			<script>
+			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+			if (!isMobile) {
+			    var btw = new BTWPlugin();
+			    btw.init({
+			        "id": "vip-container",
+			        "blogId": "25050-1619793587407-161",
+			        "name": "CoderW",
+			        "qrcode": "https://img-blog.csdnimg.cn/20210430234341147.png",
+			        "keyword": "文章"
+			    });
+			}
+			</script>
+		</div><div class="article-licensing box"><div class="licensing-title"><p>你知道Java中final和static修饰的变量是在什么时候赋值的吗？</p><p><a href="https://www.wangheng.online/archives/f76d216a.html">https://www.wangheng.online/archives/f76d216a.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-02-20</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 相关文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思</a><br></span><span>  2.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span><span>  3.<a class="is-size-6" href="/archives/d58084d9.html" target="_blank">Java中，那些关于String和字符串常量池你不得不知道的东西</a><br></span><span>  4.<a class="is-size-6" href="/archives/4bada684.html" target="_blank">String s = new String(&quot;xyz&quot;)创建了几个实例你真的能答对吗？</a><br></span></div><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思</a><br></span><span>  2.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span><span>  3.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/4bada684.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">String s = new String(&quot;xyz&quot;)创建了几个实例你真的能答对吗？</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/b7ae85a9.html"><span class="level-item">一个H2数据库源码Bug的定位之旅</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
+            var gitalk = new Gitalk({
+            language:'zh-CN',
+            id: '8e76b06efc0e3f5c47a106838096734f',
+            repo: 'xiaoyingzhi.github.io',
+            owner: 'xiaoyingzhi',
+            clientID: '6d30d2adb400a68b3378',
+            clientSecret: 'c8dfac0a2197e87a9d0cf010e389267bfd576c4e',
+            admin: ["xiaoyingzhi"],
+            createIssueManually: true,
+            distractionFreeMode: false,
+            perPage: 10,
+            pagerDirection: 'last',
+            proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token',
+            
+            enableHotKey: true,
+            isLocked: false
+        })
+        gitalk.render('comment-container')});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex is-mobile" href="#开始"><span>开始</span></a></li><li><a class="is-flex is-mobile" href="#final修饰的实例变量"><span>final修饰的实例变量</span></a></li><li><a class="is-flex is-mobile" href="#static修饰的类变量"><span>static修饰的类变量</span></a></li><li><a class="is-flex is-mobile" href="#final-static修饰的常量"><span>final+static修饰的常量</span></a></li><li><a class="is-flex is-mobile" href="#总结"><span>总结</span></a></li><li><a class="is-flex is-mobile" href="#写在最后"><span>写在最后</span></a></li><li><a class="is-flex is-mobile" href="#参考文献"><span>参考文献</span></a></li></ul></div></div><style>.menu-list > li > a.is-active + .menu-list { display: block; }.menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">12</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">6</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">11</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">欢迎关注微信公众号CoderW</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">个人微信公众号</h3><ul><li><span><span><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dc1c4429a3fd4849bbda8eb442c8f2d9~tplv-k3u1fbpfcp-watermark.image"/></span></span></li></ul></div></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新评论</h3><span class="body_hot_comment">加载中，最新评论有1分钟缓存...</span></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/archives/491288aa.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="这段关于安全点的JVM源码有点意思"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-05-16T05:11:47.000Z">2021-05-16</time></p><p class="title"><a href="/archives/491288aa.html">这段关于安全点的JVM源码有点意思</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/7a85ad07.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a4d066b9168c428eb57654bc517946f2~tplv-k3u1fbpfcp-watermark.image" alt="一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-18T14:24:37.000Z">2021-04-18</time></p><p class="title"><a href="/archives/7a85ad07.html">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/5f67733.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image" alt="来自未来的技术——ZGC垃圾回收器"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-09T03:54:27.000Z">2021-04-09</time></p><p class="title"><a href="/archives/5f67733.html">来自未来的技术——ZGC垃圾回收器</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/8a98c2c7.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="深入汇编指令解析Java关键字volatile"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-01T19:17:05.000Z">2021-04-02</time></p><p class="title"><a href="/archives/8a98c2c7.html">深入汇编指令解析Java关键字volatile</a></p><p class="categories"><a href="/categories/Java/">Java</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/d58084d9.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3df7898981dc446c870712fd25cc2339~tplv-k3u1fbpfcp-zoom-1.image" alt="Java中，那些关于String和字符串常量池你不得不知道的东西"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-03-20T03:41:04.000Z">2021-03-20</time></p><p class="title"><a href="/archives/d58084d9.html">Java中，那些关于String和字符串常量池你不得不知道的东西</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile is-marginless" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/MySQL/"><span class="level-start"><span class="level-item">MySQL</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="level-start"><span class="level-item">程序人生</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag is-grey-lightest">8</span></a></div><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag is-grey-lightest">6</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag is-grey-lightest">3</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Bug%E5%AE%9A%E4%BD%8D/"><span class="tag">Bug定位</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="tag">数据库</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/H2/"><span class="tag">H2</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/MySQL/"><span class="tag">MySQL</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/"><span class="tag">常量池</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="tag">程序人生</span><span class="tag is-grey-lightest">1</span></a></div></div></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a><p class="size-small"><span>&copy; 2021 CoderW</span><br><span><span id="statistic-times">loading...</span><script>function createTime(time) {
+            var n = new Date(time);
+            now.setTime(now.getTime() + 250),
+                days = (now - n) / 1e3 / 60 / 60 / 24,
+                dnum = Math.floor(days),
+                hours = (now - n) / 1e3 / 60 / 60 - 24 * dnum,
+                hnum = Math.floor(hours),
+            1 == String(hnum).length && (hnum = "0" + hnum),
+                minutes = (now - n) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
+                mnum = Math.floor(minutes),
+            1 == String(mnum).length && (mnum = "0" + mnum),
+                seconds = (now - n) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
+                snum = Math.round(seconds),
+            1 == String(snum).length && (snum = "0" + snum),
+                document.getElementById("statistic-times").innerHTML = "本站自 <strong>"+time.split(" ")[0].replace(/\//g,".")+"</strong> 已运行 <strong>" + dnum + "</strong> 天 <strong>" + hnum + "</strong> 小时 <strong>" + mnum + "</strong> 分 <strong>" + snum + "</strong> 秒️";
+        }var now = new Date();setInterval("createTime('2019/03/01 00:00:00')", 250,"");</script><br></span><div class="size-small"><span>访问人数: <strong><span id="busuanzi_value_site_uv">99+</span></strong> 访问量: <strong><span id="busuanzi_value_site_pv">99+</span></strong>️</span></div></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" async></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><script>$.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);})</script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script><script type="text/javascript">var pjax = new Pjax({
+            elements: "a",//代表点击链接就更新
+            selectors: [  //代表要更新的节点
+                ".section",
+                "title"
+            ],
+            cache: true,
+            cacheBust:false
+        })
+
+        function loadBusuanzi(){
+        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
+        }
+
+        function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\(', '\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };
+
+        // 开始 PJAX 执行的函数
+        document.addEventListener('pjax:send', function () {
+        });
+        
+        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
+        document.addEventListener('pjax:complete', function () {
+            $(".section").css({opacity:1});
+            if(true){
+                $.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);});
+            }
+            if(false){
+                loadMathJax();
+            }
+            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
+            loadBackTop();
+            loadBusuanzi();
+            if(typeof loadBanner == 'function'){
+                loadBanner();
+            }
+        });</script></body></html>
