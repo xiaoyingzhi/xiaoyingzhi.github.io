@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>这段关于安全点的JVM源码有点意思！ - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="没有发生GC也进入了安全点？程序员的执行结果为何不如预期？深入JVM源码分析问题，原来大佬的注释都这么自信！"><meta property="og:type" content="blog"><meta property="og:title" content="这段关于安全点的JVM源码有点意思！"><meta property="og:url" content="https://www.wangheng.online/archives/491288aa.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="没有发生GC也进入了安全点？程序员的执行结果为何不如预期？深入JVM源码分析问题，原来大佬的注释都这么自信！"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-05-16T05:11:47.000Z"><meta property="article:modified_time" content="2021-05-16T06:15:43.810Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="JVM"><meta property="article:tag" content="并发编程"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/491288aa.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-05-16T05:11:47.000Z","dateModified":"2021-05-16T06:15:43.810Z","author":{"@type":"Person","name":"CoderW"},"description":"没有发生GC也进入了安全点？程序员的执行结果为何不如预期？深入JVM源码分析问题，原来大佬的注释都这么自信！"}</script><link rel="canonical" href="https://www.wangheng.online/archives/491288aa.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-05-16T05:11:47.000Z" title="2021-05-16T05:11:47.000Z">2021-05-16</time>发表</span><span class="level-item">9 分钟读完 (大约3161个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/491288aa.html#comment-container"><span class="display-none-class">a39a9b52044a67aad4d443be0e378fcc</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="a39a9b52044a67aad4d443be0e378fcc">99+</span>  </a></div><div class="pin-icon"><i class="fas fa-thumbtack"></i></div></div><h1 class="title is-3 is-size-4-mobile">这段关于安全点的JVM源码有点意思！</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/491288aa.html" target="_blank">https://www.wangheng.online/archives/491288aa.html</a></p></div><div class="content"><blockquote>
+<p>文末 JVM 思维导图，有需要的自取</p>
+</blockquote>
+<p>熟知并发编程的你认为下面这段代码的执行结果是怎么样的？</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210419232745211"  />
+</div>
+
+<p>我如果说，执行流程是：</p>
+<ol>
+<li>t1 线程和 t2 线程一直执行 num 的累加操作</li>
+<li>主线程睡眠 1 秒，1 秒之后醒过来打印此时的 num 值</li>
+<li>t1 线程和 t2 线程继续执行加 1 的操作，直到执行完 <strong>2亿</strong> 次累加操作</li>
+</ol>
+<p>你赞成吗？</p>
+<p>我的猜想看起来没什么问题，但实际运行效果证明了我是错的，下面是运行动图：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/75ecb7a53fa74bf89520294fcc84ef1b~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>从运行动图上可以看到，将代码跑起来之后，却发现实际执行结果是这样的：</p>
+<p><strong>1 秒之后，主线程并没有马上打印 num，而是等 t1 和 t2 分别执行完 2 亿次累加操作退出循环后，才会打印 num 的值</strong>。</p>
+<p>这个结果和预想的不一样。我是基于 JDK1.8 跑的，你也可以试试。</p>
+<p>为什么会这样呢？</p>
+<p>答案是： </p>
+<p><strong>JVM 想要执行某个操作，让所有线程进入安全点，但是 t1 和 t2 线程因为 JIT 对可数循环的过渡优化必须等循环跑完了才进入安全点，所以主线程一直再等 t1 和 t2，迟迟不能输出 num 的值。</strong></p>
+<blockquote>
+<p>可数循环：形如 for (int i = 0; i &lt; 100000000; i++) {…}的循环被称为可数循环</p>
+</blockquote>
+<p>简单来说就是：<strong>主线程在等 t1 和 t2 线程进入安全点</strong></p>
+<p>这个答案的由来，why 神转载的一篇文章：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/KDUccdLALWdjNBrFjVR74Q">《真是绝了！这段被 JVM 动了手脚的代码!》</a>中已经说的很清楚了，这里不再重复阐述。</p>
+<p>此文就源于我当时的一个疑问：<strong>JVM 让线程都进入安全点到底干了什么不为人知的事情？</strong></p>
+<h2 id="发生了-GC？"><a href="#发生了-GC？" class="headerlink" title="发生了 GC？"></a>发生了 GC？</h2><p>难道是发生了 GC 吗？</p>
+<p>第一，代码里面没有创建对象申请内存。</p>
+<p>第二，加上 <strong>-XX:-PrintGC</strong> 也没有打印 GC 日志。</p>
+<p>第三，执行 <strong>jstat</strong> 命令，通过输出日志可以看出，JVM 运行期间各个内存区域都没有发生变化，也没有发生 GC。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/716e3adb3b124251bfc7c310e9093899~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>所以，因为发生了 GC 而需要进入安全点这种情况被排除了。</p>
+<p>问题就变成了：没有发生 GC，需要所有的线程都进入安全点干什么？</p>
+<h2 id="安全点日志"><a href="#安全点日志" class="headerlink" title="安全点日志"></a>安全点日志</h2><p>加上 -XX:+PrintSafepointStatistics 参数，让程序执行的时候打印安全点的相关日志。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d4f8ac7b5ab243d5981a9df910369a45~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>可以看到，这段代码的执行一共进行了三次进入安全点。</p>
+<p>其中第二个 EnableBiasedLocking 是 JVM 延时开启偏向锁的操作，这个也比较有意思，不过不是文章的重点，下次有机会再说。</p>
+<p>我们重点关注的是第一个 <strong>no vm operation</strong> 操作。将这段日志单独拿出来，在参数说明上加上中文解释：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e6f73c455b2c40318cc2e21b1458e5ed~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>总结来说就是：</p>
+<p>JVM 想执行 <strong>no vm operation</strong> ，这个操作需要线程都进入安全点，整个期间一共有 12 个线程，正在运行的线程有 2 个，需要等待这两个线程进入安全点，等待这 2 个线程进入安全点并阻塞耗费了 5037 毫秒。</p>
+<p>要找出这两个线程也很简单，它不是需要 5000 多毫秒才进入安全点吗，我就加上参数让进入安全点时间超过 5000 毫秒的线程超时就行了。</p>
+<p>于是加上 -XX:+SafepointTimeout 和 -XX:SafepointTimeoutDelay=5000 参数，执行代码。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bf5996da0bfe4e5db74a84af75220b26~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>哦豁，这不就是 t1 和 t2 线程吗。</p>
+<p>这个结果也是意料之中的，我们的重点是这个 <strong>no vm operation</strong> 到底是个什么操作？凭什么让主线程等这么久？</p>
+<h2 id="源码定位"><a href="#源码定位" class="headerlink" title="源码定位"></a>源码定位</h2><p>这个 VM 操作的名字叫做 <strong>no vm operation</strong> ，翻译成中文就是<strong>不是 VM 操作</strong>，连起来就是不是 VM 操作的 VM 操作？</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8ed6446b6538445586ce21474cbc9ddb~tplv-k3u1fbpfcp-zoom-1.image" style="zoom: 50%;" />
+</div>
+
+<p>一个不是 VM 操作的操作居然也能让全局进入安全点？</p>
+<p>那到底是什么操作呢？知识盲区了呀！</p>
+<p>一顿谷歌百度，也没有找到一个比较信服的答案。</p>
+<p>于是乎，我决定看 JVM 的源码。</p>
+<p>在 JVM 源码里面全局搜索 <strong>no vm operation</strong> ，发现只有 safepoint.cpp 有这个信息。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7de985d01f69483faa755892d112a298~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>点击去一看，果然，一下子定位到打印日志的地方，就是这个 SafepointSynchronize::print_statistics() 方法。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/feeb773d085d4853a71d3fde187eb793~tplv-k3u1fbpfcp-zoom-1.image" style="zoom:40%;" />
+</div>
+
+<p>其中有一句很关键的代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">_vmop_type == <span class="number">-1</span> ? </span><br><span class="line">    <span class="string">&quot;no vm operation&quot;</span> : </span><br><span class="line">    VM_Operation::<span class="built_in">name</span>(sstats-&gt;_vmop_type)</span><br></pre></td></tr></table></figure>
+
+<p>这是一个三目运算：如果 _vmop_type 等于 -1，打印的安全点日子操作类型那一栏就会输出 <strong>no vm operation</strong> 。</p>
+<p>而这个 _vmop_typen 呢，是结构体 SafepointStats 中的一个成员，具体的含义是<strong>触发安全点的 VM 操作类型</strong>。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2dcd910d10594353b422c36b37572503~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>那什么操作类型会将 _vmop_type 设置成 -1 呢？</p>
+<p>我在开启安全点方法里面找到了答案：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b9c3a03dcdcb4640b67946235b093aba~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>如果不是 VM 操作触发的安全点事件，这个时候就会将 _vmop_type 设置成 -1。</p>
+<p>也就是说还有其他情况也可以触发安全点事件，让所有线程进入安全点。</p>
+<p>那么，我们只需要找到触发安全点事件对应的代码就行了。</p>
+<p>一个个文件找太难，换个思路，想要进入安全点，必定要调用进入安全点的方法。</p>
+<p>而进入安全点的方法就是 safepoint.cpp 里面的 SafepointSynchronize::begin() 方法。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8c02f4f8b61a41dba7bc8d1a04fb3f59~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>我们只需要全局搜一下哪里调用了这个 SafepointSynchronize::begin() 这个方法应该就能找到触发安全点事件对应的代码。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4489f0e0dc8049b69c28443afc6b81b8~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>全局搜索发现只有 vmThread.cpp 里面有调用，vmThread.cpp 封装的都是 VMThread 相关的方法。</p>
+<h2 id="VMThread"><a href="#VMThread" class="headerlink" title="VMThread"></a>VMThread</h2><p>VMThread 是个什么东西呢？</p>
+<p>VMThread 是 JVM 自身启动的一个内部线程，它主要用来协调其它线程达到安全点以及执行 VM 操作。</p>
+<p>VM 操作这个概念全文已经多次提到了，那到底有哪些操作是 VM 操作呢？</p>
+<p>我们比较熟悉的 CMS 的初始标记和最终标记都是 VM 操作，又比如 thread dump，线程挂起以及偏向锁的撤销等等都是 VM 操作。</p>
+<p>VM 操作类型有很多，JVM 对应的源码在 vm_operations.hpp 定义的宏 VM_OPS_DO 里面。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1aea9d466c49415aafc7bf8b1298033c~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>宏 VM_OPS_DO 里面的每个 VM 操作，基本上都有一个单独的子类去实现。</p>
+<p>VMThread 里面有个 VMOperationQueue 队列，用于存放一个一个连在一起的 VM 操作。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/403d9377e3144c9f9621b7e02a0cab3d~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>VMThread 循环执行 VM 操作的方法，叫做 VMThread::loop() 方法。</p>
+<p>loop() 方法是 VMThread 的核心方法，该方法不断从 VMOperationQueue 队列中获取待执行的 VM 操作，然后调用每种 VM 操作具体的实现 evaluate() 方法执行不同的逻辑。</p>
+<p>这里用了策略模式，VMThread 执行逻辑是固定的，只负责调度，而每种 VM 操作需要根据需求自己实现 evaluate() 方法。</p>
+<h2 id="答案出现"><a href="#答案出现" class="headerlink" title="答案出现"></a>答案出现</h2><p>而我们上面苦苦寻找的 no vm operation 原因，就在 VMThread 的 loop() 方法里面。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ef88b4b8863d4be9b964b6787c8cdfee~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>从源码可以看到，在 VM 操作为空的情况下，只要满足以下 3 个条件，也是会进入安全点的：</p>
+<ol>
+<li>VMThread 处于正常运行状态</li>
+<li>设计了进入安全点的间隔时间</li>
+<li>SafepointALot 是否为 true 或者是否需要清理</li>
+</ol>
+<p>程序正常运行 VMThread 肯定能正常运行，所以条件 1 能满足。</p>
+<p>用 <strong>java -XX:+UnlockDiagnosticVMOptions -XX:+PrintFlagsFinal 2&gt;&amp;1 | grep Safepoint</strong> 命令查看 JVM 关于安全点的默认参数，发现 GuaranteedSafepointInterval 默认设置成了 1 秒，所以条件 2 也能满足。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b4459e865ee84cedb4eb6e1f1c4d8e0c~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>对于条件 3，SafepointALot 默认为 false，那要想条件 3 能满足的话，必须 SafepointSynchronize::is_cleanup_needed()为 true。</p>
+<p>点进去看它的具体实现：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e4b358af3f7049aea78ffc8ae633b081~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>通过追踪代码，可以发现 SafepointSynchronize::is_cleanup_needed() 就是判断 StubQueue 里面是否有 stub 缓存。</p>
+<p>那 StubQueue 是什么呢？stub 又是什么呢？</p>
+<p>这涉及 JVM 的模板解释器和编译器了，由于篇幅有限，下次有机会的话继续深入探讨。</p>
+<p>我用一句话概括就是  <strong>JVM 执行期间的编译解释代码缓存</strong>。</p>
+<p>清理 stub 你可以简单的理解成<strong>清理代码缓存</strong>。</p>
+<p>也就是说，在 JVM 正常运行的时候，如果设置了进入安全点的间隔，就会隔一段时间判断是否有代码缓存要清理，如果有，会进入安全点。</p>
+<p>这个触发条件不是 VM 操作，所以会将 _vmop_type 设置成-1，输出日志的时候打印对应的 <strong>no vm operation</strong>，也就是我们看到的安全点日志。</p>
+<p>而文章开头的代码执行效果，主线程一直在等待 t1 和 t2 进入安全点，正是触发了这个条件。</p>
+<h2 id="再次验证推论"><a href="#再次验证推论" class="headerlink" title="再次验证推论"></a>再次验证推论</h2><p>回过头来再看文章开头的代码，通过加上 -XX:GuaranteedSafepointInterval = 0 将进入安全点间隔时间设置成 0，也就是关闭定时进入安全点，看看代码运行结果是怎么样的。</p>
+<blockquote>
+<p>-XX:GuaranteedSafepointInterval 是诊断性质的参数，需要加上-XX:+UnlockDiagnosticVMOptions 参数解锁诊断参数方可使用。</p>
+</blockquote>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/96923c949b82431aae82f093fe11c440~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>从运行结果上可以看到，关闭过一段时间进入安全点的设置之后，主线程睡了 1 秒后，不再需要等待 t1 和 t2 线程循环执行完，睡完之后马上就打印了此时的 num 值。</p>
+<p>这样的运行结果，也再一次的验证了我们的推论。</p>
+<p>间隔一秒进入安全点的设置还是有它的作用的，我建议你别去动它。</p>
+<p> -XX:GuaranteedSafepointInterval 是个诊断性质的参数，不建议线上使用。</p>
+<p>从网上的文献来看，关掉这个参数也有可能会造成一些未知错误，具体是什么错误我也没有遇见过，也不知道是真是假。</p>
+<p>总之，线上环境谨慎一点总没错，如果你对 JVM 底层不是很熟悉的话，我建议还是别去动它。</p>
+<h2 id="有趣的注释"><a href="#有趣的注释" class="headerlink" title="有趣的注释"></a>有趣的注释</h2><p>知识点分享到这里就结束了，分享一个有趣的事情。</p>
+<p>在我追踪 JVM 源码的过程中，我发现编写 StubQueue 的作者留下了这样一段注释：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/73d67efd47144e3c99fd26a8688b9991~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>我润色翻译一下就是：<strong>在你不能证明你改的没问题的时候，别特么乱动我代码，这段代码比你想象中牛逼的多</strong>。</p>
+<p>看到没有，这就是大神的骄傲和自信！</p>
+<p>反观我呢，我平时给代码写注释的时候，只敢在上面写：<strong>如果你看到我的代码有 BUG，麻烦帮我修一下，谢谢了</strong>。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e0a1e9426cfa4dd59bd0b774b33eedd4~tplv-k3u1fbpfcp-zoom-1.image" style="zoom: 50%;" />
+</div>
+
+<p>从写注释的骄傲和自信上就能看得出，我和大神差距有多大了。</p>
+<p>我一定要加油，以后也能写出这样霸气的注释！</p>
+<h2 id="思维导图"><a href="#思维导图" class="headerlink" title="思维导图"></a>思维导图</h2><p>我把我个人觉得重要的 JVM 知识点，按照自己理解思路整理成了一个思维导图。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e8e05b30378b4043bd10756fb43d1fa7~tplv-k3u1fbpfcp-zoom-1.image"  />
+</div>
+
+<p>有需要的可以自取就行，如果图片被平台压缩了，你可以公众号后台回  <strong>JVM</strong>  获取高清图片。</p>
+<p>需要强调的是，这是我整理的知识点，里面的知识并不是我原创的。</p>
+<p>我没有创造知识，只是分享自己如何学习和理解知识。</p>
+<p>思维导图的制作参照了大量的书籍和博客，包括但不限于《深入理解 Java 虚拟机》、美团技术团队文章、阿里技术团队文章、R 大的文章、寒泉子大大的调优文章。</p>
+<p>好了，今天的文章就到此结束了。</p>
+<p>我是 CoderW，一个有时候喜欢钻牛角尖的程序员，我们下期再见！</p>
+<div align = "center">
+<img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c59da7ed150a478f9f99d5f5a8de58f0~tplv-k3u1fbpfcp-watermark.image"  />
+</div></div><div class="article-licensing box"><div class="licensing-title"><p>这段关于安全点的JVM源码有点意思！</p><p><a href="https://www.wangheng.online/archives/491288aa.html">https://www.wangheng.online/archives/491288aa.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 相关文章</span><br><span>  1.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span><span>  2.<a class="is-size-6" href="/archives/d58084d9.html" target="_blank">Java中，那些关于String和字符串常量池你不得不知道的东西</a><br></span><span>  3.<a class="is-size-6" href="/archives/4bada684.html" target="_blank">String s = new String(&quot;xyz&quot;)创建了几个实例你真的能答对吗？</a><br></span><span>  4.<a class="is-size-6" href="/archives/f76d216a.html" target="_blank">你知道Java中final和static修饰的变量是在什么时候赋值的吗？</a><br></span></div><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思！</a><br></span><span>  2.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span><span>  3.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/7a85ad07.html"><span class="level-item">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
+            var gitalk = new Gitalk({
+            language:'zh-CN',
+            id: 'a39a9b52044a67aad4d443be0e378fcc',
+            repo: 'xiaoyingzhi.github.io',
+            owner: 'xiaoyingzhi',
+            clientID: '6d30d2adb400a68b3378',
+            clientSecret: 'c8dfac0a2197e87a9d0cf010e389267bfd576c4e',
+            admin: ["xiaoyingzhi"],
+            createIssueManually: true,
+            distractionFreeMode: false,
+            perPage: 10,
+            pagerDirection: 'last',
+            proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token',
+            
+            enableHotKey: true,
+            isLocked: false
+        })
+        gitalk.render('comment-container')});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex is-mobile" href="#发生了-GC？"><span>发生了 GC？</span></a></li><li><a class="is-flex is-mobile" href="#安全点日志"><span>安全点日志</span></a></li><li><a class="is-flex is-mobile" href="#源码定位"><span>源码定位</span></a></li><li><a class="is-flex is-mobile" href="#VMThread"><span>VMThread</span></a></li><li><a class="is-flex is-mobile" href="#答案出现"><span>答案出现</span></a></li><li><a class="is-flex is-mobile" href="#再次验证推论"><span>再次验证推论</span></a></li><li><a class="is-flex is-mobile" href="#有趣的注释"><span>有趣的注释</span></a></li><li><a class="is-flex is-mobile" href="#思维导图"><span>思维导图</span></a></li></ul></div></div><style>.menu-list > li > a.is-active + .menu-list { display: block; }.menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">12</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">6</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">11</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">欢迎关注微信公众号CoderW</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">个人微信公众号</h3><ul><li><span><span><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dc1c4429a3fd4849bbda8eb442c8f2d9~tplv-k3u1fbpfcp-watermark.image"/></span></span></li></ul></div></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新评论</h3><span class="body_hot_comment">加载中，最新评论有1分钟缓存...</span></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/archives/491288aa.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="这段关于安全点的JVM源码有点意思！"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-05-16T05:11:47.000Z">2021-05-16</time></p><p class="title"><a href="/archives/491288aa.html">这段关于安全点的JVM源码有点意思！</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/7a85ad07.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a4d066b9168c428eb57654bc517946f2~tplv-k3u1fbpfcp-watermark.image" alt="一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-18T14:24:37.000Z">2021-04-18</time></p><p class="title"><a href="/archives/7a85ad07.html">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/5f67733.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image" alt="来自未来的技术——ZGC垃圾回收器"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-09T03:54:27.000Z">2021-04-09</time></p><p class="title"><a href="/archives/5f67733.html">来自未来的技术——ZGC垃圾回收器</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/8a98c2c7.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="深入汇编指令解析Java关键字volatile"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-01T19:17:05.000Z">2021-04-02</time></p><p class="title"><a href="/archives/8a98c2c7.html">深入汇编指令解析Java关键字volatile</a></p><p class="categories"><a href="/categories/Java/">Java</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/d58084d9.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3df7898981dc446c870712fd25cc2339~tplv-k3u1fbpfcp-zoom-1.image" alt="Java中，那些关于String和字符串常量池你不得不知道的东西"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-03-20T03:41:04.000Z">2021-03-20</time></p><p class="title"><a href="/archives/d58084d9.html">Java中，那些关于String和字符串常量池你不得不知道的东西</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile is-marginless" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/MySQL/"><span class="level-start"><span class="level-item">MySQL</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="level-start"><span class="level-item">程序人生</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag is-grey-lightest">7</span></a></div><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag is-grey-lightest">6</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag is-grey-lightest">4</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Bug%E5%AE%9A%E4%BD%8D/"><span class="tag">Bug定位</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="tag">数据库</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/H2/"><span class="tag">H2</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/MySQL/"><span class="tag">MySQL</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/"><span class="tag">常量池</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="tag">程序人生</span><span class="tag is-grey-lightest">1</span></a></div></div></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a><p class="size-small"><span>&copy; 2021 CoderW</span><br><span><span id="statistic-times">loading...</span><script>function createTime(time) {
+            var n = new Date(time);
+            now.setTime(now.getTime() + 250),
+                days = (now - n) / 1e3 / 60 / 60 / 24,
+                dnum = Math.floor(days),
+                hours = (now - n) / 1e3 / 60 / 60 - 24 * dnum,
+                hnum = Math.floor(hours),
+            1 == String(hnum).length && (hnum = "0" + hnum),
+                minutes = (now - n) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
+                mnum = Math.floor(minutes),
+            1 == String(mnum).length && (mnum = "0" + mnum),
+                seconds = (now - n) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
+                snum = Math.round(seconds),
+            1 == String(snum).length && (snum = "0" + snum),
+                document.getElementById("statistic-times").innerHTML = "本站自 <strong>"+time.split(" ")[0].replace(/\//g,".")+"</strong> 已运行 <strong>" + dnum + "</strong> 天 <strong>" + hnum + "</strong> 小时 <strong>" + mnum + "</strong> 分 <strong>" + snum + "</strong> 秒️";
+        }var now = new Date();setInterval("createTime('2019/03/01 00:00:00')", 250,"");</script><br></span><div class="size-small"><span>访问人数: <strong><span id="busuanzi_value_site_uv">99+</span></strong> 访问量: <strong><span id="busuanzi_value_site_pv">99+</span></strong>️</span></div></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" async></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><script>$.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);})</script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script><script type="text/javascript">var pjax = new Pjax({
+            elements: "a",//代表点击链接就更新
+            selectors: [  //代表要更新的节点
+                ".section",
+                "title"
+            ],
+            cache: true,
+            cacheBust:false
+        })
+
+        function loadBusuanzi(){
+        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
+        }
+
+        function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\(', '\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };
+
+        // 开始 PJAX 执行的函数
+        document.addEventListener('pjax:send', function () {
+        });
+        
+        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
+        document.addEventListener('pjax:complete', function () {
+            $(".section").css({opacity:1});
+            if(true){
+                $.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);});
+            }
+            if(false){
+                loadMathJax();
+            }
+            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
+            loadBackTop();
+            loadBusuanzi();
+            if(typeof loadBanner == 'function'){
+                loadBanner();
+            }
+        });</script></body></html>
