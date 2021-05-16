@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Java线程的自述 - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"><meta property="og:type" content="blog"><meta property="og:title" content="Java线程的自述"><meta property="og:url" content="https://www.wangheng.online/archives/7abeb6e4.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0d51037bc7a4462bbd9530b570c9f0a8~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-01-25T03:18:55.000Z"><meta property="article:modified_time" content="2021-05-16T07:39:48.248Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="Java"><meta property="article:tag" content="JVM"><meta property="article:tag" content="并发编程"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0d51037bc7a4462bbd9530b570c9f0a8~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/7abeb6e4.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-01-25T03:18:55.000Z","dateModified":"2021-05-16T07:39:48.248Z","author":{"@type":"Person","name":"CoderW"},"description":"和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"}</script><link rel="canonical" href="https://www.wangheng.online/archives/7abeb6e4.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-01-25T03:18:55.000Z" title="2021-01-25T03:18:55.000Z">2021-01-25</time>发表</span><span class="level-item">9 分钟读完 (大约3224个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/7abeb6e4.html#comment-container"><span class="display-none-class">5fb5c3b1e8e82600b9d1a44af1d02863</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="5fb5c3b1e8e82600b9d1a44af1d02863">99+</span>  </a></div></div><h1 class="title is-3 is-size-4-mobile">Java线程的自述</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/7abeb6e4.html" target="_blank">https://www.wangheng.online/archives/7abeb6e4.html</a></p></div><div class="content"><div id="vip-container"><h2 id="我是谁"><a href="#我是谁" class="headerlink" title="我是谁"></a>我是谁</h2><p>我是一个线程，一个底层的打工人。</p>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Java线程的自述 - CoderW的编程博客</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW的编程博客"><meta name="msapplication-TileImage" content="/img/favicon.ico"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW的编程博客"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"><meta property="og:type" content="blog"><meta property="og:title" content="Java线程的自述"><meta property="og:url" content="https://www.wangheng.online/archives/7abeb6e4.html"><meta property="og:site_name" content="CoderW的编程博客"><meta property="og:description" content="和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0d51037bc7a4462bbd9530b570c9f0a8~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-01-25T03:18:55.000Z"><meta property="article:modified_time" content="2021-05-16T08:08:39.621Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="Java"><meta property="article:tag" content="JVM"><meta property="article:tag" content="并发编程"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0d51037bc7a4462bbd9530b570c9f0a8~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/7abeb6e4.html"},"headline":"Java线程的自述","image":[],"datePublished":"2021-01-25T03:18:55.000Z","dateModified":"2021-05-16T08:08:39.621Z","author":{"@type":"Person","name":"CoderW"},"description":"和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。"}</script><link rel="canonical" href="https://www.wangheng.online/archives/7abeb6e4.html"><link rel="icon" href="/img/favicon.ico"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><!--!--><!--!--><meta name="generator" content="Hexo 5.4.0"></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW的编程博客" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-01-25T03:18:55.000Z" title="1/25/2021, 11:18:55 AM">2021-01-25</time>发表</span><span class="level-item"><time dateTime="2021-05-16T08:08:39.621Z" title="5/16/2021, 4:08:39 PM">2021-05-16</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/Java/">Java</a></span><span class="level-item">21 分钟读完 (大约3224个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span></div></div><h1 class="title is-3 is-size-4-mobile"> Java线程的自述</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/7abeb6e4.html" target="_blank">https://www.wangheng.online/archives/7abeb6e4.html</a></p></div><div class="content"><h2 id="我是谁"><a href="#我是谁" class="headerlink" title="我是谁"></a>我是谁</h2><p>我是一个线程，一个底层的打工人。</p>
 <div align = "center">
 <img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b30cb8c988c14e41a3f567ba844ed3e9~tplv-k3u1fbpfcp-zoom-1.image" alt="打工人" style="zoom:67%;" width="30%" />
 </div>
@@ -17,7 +17,7 @@
 <p>在JVM里面，我有一个JavaThread的小弟，他帮我联系操作系统的osthread线程。</p>
 <p>调用我的start方法之后，具体的执行流程是这样的：</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8e3154cc1db941a59da810bf2c0012e6~tplv-k3u1fbpfcp-zoom-1.image"  width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8e3154cc1db941a59da810bf2c0012e6~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210130184446156" width="90%" />
 </div>
 
 <p>当然了，这个过程省略了很多细节，不过很明确的是，我和内核线程是一一对应的。</p>
@@ -30,20 +30,20 @@
 <h2 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h2><p>和你们人类一样，我也有着精彩的一生，也会经历出生（创建）、奋斗（Running）、死亡（销毁）等过程，今天我主要和你讲述的是我打工奋斗的生活。</p>
 <p>原来我是打零工的，有人需要我的时候就创建一个我，等我完成工作就把我销毁。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/187d66b9db0446cfade9dabedb6eae26~tplv-k3u1fbpfcp-zoom-1.image"   width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/187d66b9db0446cfade9dabedb6eae26~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210130172133624"  width="80%" />
 </div>
 
 <p>上面也提到过，我和内核线程是一对一的，创建和销毁的过程是非常消耗资源的，所以这样的成本非常高。</p>
 <p>于是，有人就想了一个办法，开了一个公司，也就是你们说的线程池。</p>
 <p>线程池公司统一管理调度我们线程。我们在线程池里面重复着<code>等待工作——完成工作</code>的步骤。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f06cdb3c8d274b93aefe8e12fdebedad~tplv-k3u1fbpfcp-zoom-1.image"   width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f06cdb3c8d274b93aefe8e12fdebedad~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210130175632614"  width="80%" />
 </div>
 
 <p>这样我就可以日复一日年复一年的重复打工了，这种提供了减少对象数量从而改善应用所需的对象结构的方式的模式，被你们人类叫做“享元模式”。</p>
 <p>线程池公司有很多种，但都离不开这几个主要指标：</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4cbf639171d44c4bb838a6a5ba17e422~tplv-k3u1fbpfcp-zoom-1.image"   width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4cbf639171d44c4bb838a6a5ba17e422~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210130175721394"  width="80%" />
 </div>
 
 <ul>
@@ -91,7 +91,7 @@
 </li>
 </ul>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/973dabc525c0483aa5ab8f91743389af~tplv-k3u1fbpfcp-zoom-1.image"    width="80%"/>
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/973dabc525c0483aa5ab8f91743389af~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131164350267"   width="80%"/>
 </div>
 
 <ul>
@@ -101,7 +101,7 @@
 </li>
 </ul>
  <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4d01047402274151b4cc8d7b922a0402~tplv-k3u1fbpfcp-zoom-1.image"   width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4d01047402274151b4cc8d7b922a0402~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131164701335"  width="80%" />
 </div>
 
 <p>当然，除了以上这几种拒绝策略，你也可以根据实际的业务场景和业务需求去自定义拒绝策略，只需要实现RejectedExecutionHander接口，自定义里面的rejectedExecution方法。</p>
@@ -114,14 +114,14 @@
 <li>如果任务队列满了还有任务过来，如果临时工名额没有满（workerCount &lt; maximumPoolSize），就去招聘临时工让临时工执行任务。如果临时工名额都满了，触发任务拒绝策略。</li>
 </ol>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/069b419bd5574b10b6b805c42e901ed3~tplv-k3u1fbpfcp-zoom-1.image"    width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/069b419bd5574b10b6b805c42e901ed3~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131184333322"   width="80%" />
 </div>
 
 <p>总结而言，就是核心线程能干的事情尽量不去创建非核心线程，这是线程池很关键的一点。</p>
 <h3 id="有哪些线程池"><a href="#有哪些线程池" class="headerlink" title="有哪些线程池"></a>有哪些线程池</h3><p>我有过四段工作经历，每段经历都有着精彩的故事。</p>
 <h4 id="SingleThreadExecutor"><a href="#SingleThreadExecutor" class="headerlink" title="SingleThreadExecutor"></a>SingleThreadExecutor</h4><p>SingleThreadExecutor是我加入的第一家线程池，这是一家创业公司，整个线程池就只有我一个线程。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/42a263eb57324788a06ff12793b92f1c~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/42a263eb57324788a06ff12793b92f1c~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131022002342"  width="90%" />
 </div>
 
 <p>所有的任务都由我干，而且任务队列是一个无界队列。就是说，打工的线程只有我一个，但是需求任务可以是无限多。</p>
@@ -130,7 +130,7 @@
 <p>这种线程池适用于并发量不大且需要任务顺序执行的场景。</p>
 <h4 id="FixedThreadPool"><a href="#FixedThreadPool" class="headerlink" title="FixedThreadPool"></a>FixedThreadPool</h4><p>后来公司倒闭了，我又加入了一个叫FixedThreadPool的线程池。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8bb152da389c445d95bb49477dcb3077~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8bb152da389c445d95bb49477dcb3077~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131021901279"  width="90%" />
 </div>
 
 <p>FixedThreadPool和SingleThreadExecutor唯一不同的地方就是核心线程的数量，FixedThreadPool可以招收很多的打工线程。</p>
@@ -139,7 +139,7 @@
 <p>这种线程池线程数固定，且不被回收，线程与线程池的生命周期同步的线程池，适用于任务量比较固定但耗时长的任务。</p>
 <h4 id="CachedThreadPool"><a href="#CachedThreadPool" class="headerlink" title="CachedThreadPool"></a>CachedThreadPool</h4><p>后来，为了离家更近，我离职了。加入了一家叫CachedThreadPool的线程池，进去之后，却发现这是一家外包公司。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e47b6089553e4aa3979fb14a30a10933~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e47b6089553e4aa3979fb14a30a10933~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131015429257"  width="90%" />
 </div>
 
 <p>这种线程池里面没有一个核心线程（正式工），一有需求就去招聘一个非核心线程（临时工）。</p>
@@ -147,7 +147,7 @@
 <p>这种线程池的任务队列采用的是SynchronousQueue，这个队列是无法插入任务的，一有任务就创建一个线程执行，如果并发高且任务耗时长，创建太多线程也是可能导致OOM的。所以CachedThreadPool比较适合任务量大但耗时少的任务。</p>
 <h4 id="ScheduleThreadPool"><a href="#ScheduleThreadPool" class="headerlink" title="ScheduleThreadPool"></a>ScheduleThreadPool</h4><p>经历了外面的风风雨雨，我觉得还是找份固定的工作比较可靠，于是我加入了一家叫做ScheduleThreadPool的国企。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2f2cb17e1b6c44c79312466e87b9490e~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2f2cb17e1b6c44c79312466e87b9490e~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131022031076"  width="90%" />
 </div>
 
 <p>在这里，工作比较的轻松，多数情况下，我只需要在固定的时间干固定的活。</p>
@@ -165,23 +165,23 @@
 <h3 id="2-线程池里面的线程执行异常了会怎么样？"><a href="#2-线程池里面的线程执行异常了会怎么样？" class="headerlink" title="2. 线程池里面的线程执行异常了会怎么样？"></a>2. 线程池里面的线程执行异常了会怎么样？</h3><p>如果一个线程执行任务的过程中出现异常，那么这个线程对应的Worker会被移出线程池，该线程也会被销毁回收。</p>
 <p>同时会通过指定的线程工厂创建一个线程，并封装成Worker放入线程池代替移除的Worker。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cf74b17c0bf2407286bd72f957715a99~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cf74b17c0bf2407286bd72f957715a99~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210201045911590"  width="90%" />
 </div>
 
 <h3 id="3-核心线程能被回收吗？"><a href="#3-核心线程能被回收吗？" class="headerlink" title="3. 核心线程能被回收吗？"></a>3. 核心线程能被回收吗？</h3><p>核心线程默认不会被回收。但是可以调用allowCoreThreadTimeOut让核心线程可以被回收。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bdb50210e5c642e2851a5fc9b8877bcc~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bdb50210e5c642e2851a5fc9b8877bcc~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131190101003"  width="90%" />
 </div>
 
 <p>需要注意的是，调用这个方法的线程池必须将keepAliveTime设置为大于0，否则会抛出异常。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6677c96f4275418a906f18f1ceba6e78~tplv-k3u1fbpfcp-zoom-1.image"   width="90%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6677c96f4275418a906f18f1ceba6e78~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131190226646"  width="90%" />
 </div>
 
 <h3 id="4-核心线程和非核心线程是如何区分的？"><a href="#4-核心线程和非核心线程是如何区分的？" class="headerlink" title="4. 核心线程和非核心线程是如何区分的？"></a>4. 核心线程和非核心线程是如何区分的？</h3><p>核心线程和非核心线程是一个抽象概念，只是用于更好的表述线程池的运行逻辑，实际上都对应操作系统的osThread，都是重量级线程。</p>
 <p>在新增Worker的时候，通过一个boolean表达是核心线程还是非核心线程，本质上两者没有什么不同。</p>
 <div align = "center">
-<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1762e8cead6242d08fa754f8afd3515a~tplv-k3u1fbpfcp-zoom-1.image"   width="80%" />
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1762e8cead6242d08fa754f8afd3515a~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210131205854199"  width="80%" />
 </div>
 
 <h3 id="5-为什么阿里不允许使用-Executors-去创建线程池？"><a href="#5-为什么阿里不允许使用-Executors-去创建线程池？" class="headerlink" title="5. 为什么阿里不允许使用 Executors 去创建线程池？"></a>5. 为什么阿里不允许使用 Executors 去创建线程池？</h3><p>FixedThreadPool 和 SingleThreadPool：允许的请求队列长度为 Integer.MAX_VALUE，可能会堆积大量的请求，从而导致 OOM。</p>
@@ -199,63 +199,73 @@
 <li>《Java并发编程的艺术》</li>
 <li>《深入理解Java虚拟机》</li>
 </ul>
-</div>
-
-			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
-			<script>
-			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
-			if (!isMobile) {
-			    var btw = new BTWPlugin();
-			    btw.init({
-			        "id": "vip-container",
-			        "blogId": "25050-1619793587407-161",
-			        "name": "CoderW",
-			        "qrcode": "https://img-blog.csdnimg.cn/20210430234341147.png",
-			        "keyword": "文章"
-			    });
-			}
-			</script>
-		</div><div class="article-licensing box"><div class="licensing-title"><p>Java线程的自述</p><p><a href="https://www.wangheng.online/archives/7abeb6e4.html">https://www.wangheng.online/archives/7abeb6e4.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-01-25</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 相关文章</span><br><span>  1.<a class="is-size-6" href="/archives/8a98c2c7.html" target="_blank">深入汇编指令解析Java关键字volatile</a><br></span><span>  2.<a class="is-size-6" href="/archives/9e29d5b3.html" target="_blank">ThreadLocal到底是个啥？</a><br></span></div><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思</a><br></span><span>  2.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span><span>  3.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/f1dd993a.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">网瘾少年的编程之路</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/9e29d5b3.html"><span class="level-item">ThreadLocal到底是个啥？</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
-            var gitalk = new Gitalk({
-            language:'zh-CN',
-            id: '5fb5c3b1e8e82600b9d1a44af1d02863',
-            repo: 'xiaoyingzhi.github.io',
-            owner: 'xiaoyingzhi',
-            clientID: '6d30d2adb400a68b3378',
-            clientSecret: 'c8dfac0a2197e87a9d0cf010e389267bfd576c4e',
-            admin: ["xiaoyingzhi"],
-            createIssueManually: true,
-            distractionFreeMode: false,
-            perPage: 10,
-            pagerDirection: 'last',
-            proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token',
+</div><div class="article-licensing box"><div class="licensing-title"><p>Java线程的自述</p><p><a href="https://www.wangheng.online/archives/7abeb6e4.html">https://www.wangheng.online/archives/7abeb6e4.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>CoderW</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-01-25</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/Java/">Java</a><a class="link-muted mr-2" rel="tag" href="/tags/JVM/">JVM</a><a class="link-muted mr-2" rel="tag" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/">并发编程</a></div><div class="sharethis-inline-share-buttons"></div><script src="https://platform-api.sharethis.com/js/sharethis.js#property=606f03a4e898f60018871524&amp;product=inline-share-buttons" defer></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/f1dd993a.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">网瘾少年的编程之路</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/9e29d5b3.html"><span class="level-item">ThreadLocal到底是个啥？</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/valine/1.4.14/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "I1VMb5sFuFf0IsFiQkoBrlzy-gzGzoHsz",
+            appKey: "vUK1NlGVwP5x7smcOz97NaqQ",
             
-            enableHotKey: true,
-            isLocked: false
-        })
-        gitalk.render('comment-container')});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex is-mobile" href="#我是谁"><span>我是谁</span></a></li><li><a class="is-flex is-mobile" href="#Java中的线程"><span>Java中的线程</span></a></li><li><a class="is-flex is-mobile" href="#线程池"><span>线程池</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#阻塞队列"><span>阻塞队列</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#ArrayBlockingQueue"><span>ArrayBlockingQueue</span></a></li><li><a class="is-flex is-mobile" href="#LinkedBlockingQueue"><span>LinkedBlockingQueue</span></a></li><li><a class="is-flex is-mobile" href="#SynchronousQueue"><span>SynchronousQueue</span></a></li><li><a class="is-flex is-mobile" href="#PriorityBlockingQueue"><span>PriorityBlockingQueue</span></a></li><li><a class="is-flex is-mobile" href="#DelayedWorkQueue"><span>DelayedWorkQueue</span></a></li></ul></li><li><a class="is-flex is-mobile" href="#拒绝策略"><span>拒绝策略</span></a></li><li><a class="is-flex is-mobile" href="#运行流程"><span>运行流程</span></a></li><li><a class="is-flex is-mobile" href="#有哪些线程池"><span>有哪些线程池</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#SingleThreadExecutor"><span>SingleThreadExecutor</span></a></li><li><a class="is-flex is-mobile" href="#FixedThreadPool"><span>FixedThreadPool</span></a></li><li><a class="is-flex is-mobile" href="#CachedThreadPool"><span>CachedThreadPool</span></a></li><li><a class="is-flex is-mobile" href="#ScheduleThreadPool"><span>ScheduleThreadPool</span></a></li></ul></li></ul></li><li><a class="is-flex is-mobile" href="#总结"><span>总结</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#1-线程池提交任务有哪几种方式？分别有什么区别？"><span>1. 线程池提交任务有哪几种方式？分别有什么区别？</span></a></li><li><a class="is-flex is-mobile" href="#2-线程池里面的线程执行异常了会怎么样？"><span>2. 线程池里面的线程执行异常了会怎么样？</span></a></li><li><a class="is-flex is-mobile" href="#3-核心线程能被回收吗？"><span>3. 核心线程能被回收吗？</span></a></li><li><a class="is-flex is-mobile" href="#4-核心线程和非核心线程是如何区分的？"><span>4. 核心线程和非核心线程是如何区分的？</span></a></li><li><a class="is-flex is-mobile" href="#5-为什么阿里不允许使用-Executors-去创建线程池？"><span>5. 为什么阿里不允许使用 Executors 去创建线程池？</span></a></li></ul></li><li><a class="is-flex is-mobile" href="#写在最后"><span>写在最后</span></a></li><li><a class="is-flex is-mobile" href="#参考文章"><span>参考文章</span></a></li></ul></div></div><style>.menu-list > li > a.is-active + .menu-list { display: block; }.menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">12</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">6</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">11</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">欢迎关注微信公众号CoderW</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">个人微信公众号</h3><ul><li><span><span><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dc1c4429a3fd4849bbda8eb442c8f2d9~tplv-k3u1fbpfcp-watermark.image"/></span></span></li></ul></div></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新评论</h3><span class="body_hot_comment">加载中，最新评论有1分钟缓存...</span></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/archives/491288aa.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="这段关于安全点的JVM源码有点意思"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-05-16T05:11:47.000Z">2021-05-16</time></p><p class="title"><a href="/archives/491288aa.html">这段关于安全点的JVM源码有点意思</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/7a85ad07.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a4d066b9168c428eb57654bc517946f2~tplv-k3u1fbpfcp-watermark.image" alt="一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-18T14:24:37.000Z">2021-04-18</time></p><p class="title"><a href="/archives/7a85ad07.html">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/5f67733.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image" alt="来自未来的技术——ZGC垃圾回收器"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-09T03:54:27.000Z">2021-04-09</time></p><p class="title"><a href="/archives/5f67733.html">来自未来的技术——ZGC垃圾回收器</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/8a98c2c7.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="深入汇编指令解析Java关键字volatile"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-01T19:17:05.000Z">2021-04-02</time></p><p class="title"><a href="/archives/8a98c2c7.html">深入汇编指令解析Java关键字volatile</a></p><p class="categories"><a href="/categories/Java/">Java</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/d58084d9.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3df7898981dc446c870712fd25cc2339~tplv-k3u1fbpfcp-zoom-1.image" alt="Java中，那些关于String和字符串常量池你不得不知道的东西"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-03-20T03:41:04.000Z">2021-03-20</time></p><p class="title"><a href="/archives/d58084d9.html">Java中，那些关于String和字符串常量池你不得不知道的东西</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile is-marginless" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/MySQL/"><span class="level-start"><span class="level-item">MySQL</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="level-start"><span class="level-item">程序人生</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag is-grey-lightest">8</span></a></div><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag is-grey-lightest">6</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag is-grey-lightest">3</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Bug%E5%AE%9A%E4%BD%8D/"><span class="tag">Bug定位</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="tag">数据库</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/H2/"><span class="tag">H2</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/MySQL/"><span class="tag">MySQL</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/"><span class="tag">常量池</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="tag">程序人生</span><span class="tag is-grey-lightest">1</span></a></div></div></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a><p class="size-small"><span>&copy; 2021 CoderW</span><br><span><span id="statistic-times">loading...</span><script>function createTime(time) {
-            var n = new Date(time);
-            now.setTime(now.getTime() + 250),
-                days = (now - n) / 1e3 / 60 / 60 / 24,
-                dnum = Math.floor(days),
-                hours = (now - n) / 1e3 / 60 / 60 - 24 * dnum,
-                hnum = Math.floor(hours),
-            1 == String(hnum).length && (hnum = "0" + hnum),
-                minutes = (now - n) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
-                mnum = Math.floor(minutes),
-            1 == String(mnum).length && (mnum = "0" + mnum),
-                seconds = (now - n) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
-                snum = Math.round(seconds),
-            1 == String(snum).length && (snum = "0" + snum),
-                document.getElementById("statistic-times").innerHTML = "本站自 <strong>"+time.split(" ")[0].replace(/\//g,".")+"</strong> 已运行 <strong>" + dnum + "</strong> 天 <strong>" + hnum + "</strong> 小时 <strong>" + mnum + "</strong> 分 <strong>" + snum + "</strong> 秒️";
-        }var now = new Date();setInterval("createTime('2019/03/01 00:00:00')", 250,"");</script><br></span><div class="size-small"><span>访问人数: <strong><span id="busuanzi_value_site_uv">99+</span></strong> 访问量: <strong><span id="busuanzi_value_site_pv">99+</span></strong>️</span></div></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" async></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            avatar: "wavatar",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-CN",
+            visitor: true,
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1 is-sticky"><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">10</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">5</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">10</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">关注我</a></div></div></div><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#我是谁"><span class="level-left"><span class="level-item">1</span><span class="level-item">我是谁</span></span></a></li><li><a class="level is-mobile" href="#Java中的线程"><span class="level-left"><span class="level-item">2</span><span class="level-item">Java中的线程</span></span></a></li><li><a class="level is-mobile" href="#线程池"><span class="level-left"><span class="level-item">3</span><span class="level-item">线程池</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#阻塞队列"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">阻塞队列</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#ArrayBlockingQueue"><span class="level-left"><span class="level-item">3.1.1</span><span class="level-item">ArrayBlockingQueue</span></span></a></li><li><a class="level is-mobile" href="#LinkedBlockingQueue"><span class="level-left"><span class="level-item">3.1.2</span><span class="level-item">LinkedBlockingQueue</span></span></a></li><li><a class="level is-mobile" href="#SynchronousQueue"><span class="level-left"><span class="level-item">3.1.3</span><span class="level-item">SynchronousQueue</span></span></a></li><li><a class="level is-mobile" href="#PriorityBlockingQueue"><span class="level-left"><span class="level-item">3.1.4</span><span class="level-item">PriorityBlockingQueue</span></span></a></li><li><a class="level is-mobile" href="#DelayedWorkQueue"><span class="level-left"><span class="level-item">3.1.5</span><span class="level-item">DelayedWorkQueue</span></span></a></li></ul></li><li><a class="level is-mobile" href="#拒绝策略"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">拒绝策略</span></span></a></li><li><a class="level is-mobile" href="#运行流程"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">运行流程</span></span></a></li><li><a class="level is-mobile" href="#有哪些线程池"><span class="level-left"><span class="level-item">3.4</span><span class="level-item">有哪些线程池</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#SingleThreadExecutor"><span class="level-left"><span class="level-item">3.4.1</span><span class="level-item">SingleThreadExecutor</span></span></a></li><li><a class="level is-mobile" href="#FixedThreadPool"><span class="level-left"><span class="level-item">3.4.2</span><span class="level-item">FixedThreadPool</span></span></a></li><li><a class="level is-mobile" href="#CachedThreadPool"><span class="level-left"><span class="level-item">3.4.3</span><span class="level-item">CachedThreadPool</span></span></a></li><li><a class="level is-mobile" href="#ScheduleThreadPool"><span class="level-left"><span class="level-item">3.4.4</span><span class="level-item">ScheduleThreadPool</span></span></a></li></ul></li></ul></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">4</span><span class="level-item">总结</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#1-线程池提交任务有哪几种方式？分别有什么区别？"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">1. 线程池提交任务有哪几种方式？分别有什么区别？</span></span></a></li><li><a class="level is-mobile" href="#2-线程池里面的线程执行异常了会怎么样？"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">2. 线程池里面的线程执行异常了会怎么样？</span></span></a></li><li><a class="level is-mobile" href="#3-核心线程能被回收吗？"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">3. 核心线程能被回收吗？</span></span></a></li><li><a class="level is-mobile" href="#4-核心线程和非核心线程是如何区分的？"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">4. 核心线程和非核心线程是如何区分的？</span></span></a></li><li><a class="level is-mobile" href="#5-为什么阿里不允许使用-Executors-去创建线程池？"><span class="level-left"><span class="level-item">4.5</span><span class="level-item">5. 为什么阿里不允许使用 Executors 去创建线程池？</span></span></a></li></ul></li><li><a class="level is-mobile" href="#写在最后"><span class="level-left"><span class="level-item">5</span><span class="level-item">写在最后</span></span></a></li><li><a class="level is-mobile" href="#参考文章"><span class="level-left"><span class="level-item">6</span><span class="level-item">参考文章</span></span></a></li></ul></div></div><style>#toc .menu-list > li > a.is-active + .menu-list { display: block; }#toc .menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW的编程博客" height="28"></a><p class="is-size-7">Powered by <span> CoderW &copy; 2021 </span><br><span id="busuanzi_container_site_uv">共<span id="busuanzi_value_site_uv">0</span>个访客, <span id="busuanzi_value_site_pv">0</span>次访问</span></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
             article: {
                 highlight: {
                     clipboard: true,
                     fold: 'unfolded'
                 }
             }
-        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+        };</script><script>if (true == true) {
+			$(document).ready(function () {
+				var int = setInterval(fixCount, 100);
+				var uvOffSet = parseInt(8756);
+				var pvOffSet = parseInt(13092);
+				
+				function fixCount() {
+					var realUv = parseInt($("#busuanzi_value_site_uv").html())
+					var realPv = parseInt($("#busuanzi_value_site_pv").html())
+					if ($("#busuanzi_container_site_uv").css("display") != "none" && realUv > 0) {
+						clearInterval(int);
+						$("#busuanzi_value_site_uv").html(realUv + uvOffSet);
+						$("#busuanzi_value_site_pv").html(realPv + pvOffSet);
+					}
+				}
+			});
+		}</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js" defer></script><script>window.addEventListener("load", () => {
+      window.cookieconsent.initialise({
+        type: "info",
+        theme: "edgeless",
+        static: false,
+        position: "bottom-left",
+        content: {
+          message: "此网站使用Cookie来改善您的体验。",
+          dismiss: "知道了！",
+          allow: "允许使用Cookie",
+          deny: "拒绝",
+          link: "了解更多",
+          policy: "Cookie政策",
+          href: "https://www.cookiesandyou.com/",
+        },
+        palette: {
+          popup: {
+            background: "#edeff5",
+            text: "#838391"
+          },
+          button: {
+            background: "#4b81e8"
+          },
+        },
+      });
+    });</script><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
             if (typeof $.fn.lightGallery === 'function') {
                 $('.article').lightGallery({ selector: '.gallery-item' });
             }
@@ -265,47 +275,6 @@
                 }
                 $('.justified-gallery').justifiedGallery();
             }
-        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><script>$.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);})</script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+        });</script><!--!--><!--!--><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
             loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
-        });</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script><script type="text/javascript">var pjax = new Pjax({
-            elements: "a",//代表点击链接就更新
-            selectors: [  //代表要更新的节点
-                ".section",
-                "title"
-            ],
-            cache: true,
-            cacheBust:false
-        })
-
-        function loadBusuanzi(){
-        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
-        }
-
-        function loadMathJax() { //加载mathjax
-            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
-                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\(', '\)']] } });
-                var math = document.getElementsByClassName("entry-content")[0];
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
-            });
-        };
-
-        // 开始 PJAX 执行的函数
-        document.addEventListener('pjax:send', function () {
-        });
-        
-        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
-        document.addEventListener('pjax:complete', function () {
-            $(".section").css({opacity:1});
-            if(true){
-                $.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);});
-            }
-            if(false){
-                loadMathJax();
-            }
-            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
-            loadBackTop();
-            loadBusuanzi();
-            if(typeof loadBanner == 'function'){
-                loadBanner();
-            }
         });</script></body></html>
