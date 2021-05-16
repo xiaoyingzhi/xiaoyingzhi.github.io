@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>来自未来的技术——ZGC垃圾回收器 - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="ZGC（The Z Garbage Collector）是JDK 11中推出的一款追求极致低延迟的实验性质的垃圾收集器，它曾经设计目标包括：停顿时间不超过10ms；支持8MB~4TB级别的堆（未来支持16TB）......"><meta property="og:type" content="blog"><meta property="og:title" content="来自未来的技术——ZGC垃圾回收器"><meta property="og:url" content="https://www.wangheng.online/archives/5f67733.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="ZGC（The Z Garbage Collector）是JDK 11中推出的一款追求极致低延迟的实验性质的垃圾收集器，它曾经设计目标包括：停顿时间不超过10ms；支持8MB~4TB级别的堆（未来支持16TB）......"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-04-09T03:54:27.000Z"><meta property="article:modified_time" content="2021-05-16T07:15:43.176Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="Java"><meta property="article:tag" content="JVM"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/5f67733.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-04-09T03:54:27.000Z","dateModified":"2021-05-16T07:15:43.176Z","author":{"@type":"Person","name":"CoderW"},"description":"ZGC（The Z Garbage Collector）是JDK 11中推出的一款追求极致低延迟的实验性质的垃圾收集器，它曾经设计目标包括：停顿时间不超过10ms；支持8MB~4TB级别的堆（未来支持16TB）......"}</script><link rel="canonical" href="https://www.wangheng.online/archives/5f67733.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-04-09T03:54:27.000Z" title="2021-04-09T03:54:27.000Z">2021-04-09</time>发表</span><span class="level-item">11 分钟读完 (大约3846个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/5f67733.html#comment-container"><span class="display-none-class">f6a74cb5945e6696391f0350c42f341f</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="f6a74cb5945e6696391f0350c42f341f">99+</span>  </a></div><div class="pin-icon"><i class="fas fa-thumbtack"></i></div></div><h1 class="title is-3 is-size-4-mobile">来自未来的技术——ZGC垃圾回收器</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/5f67733.html" target="_blank">https://www.wangheng.online/archives/5f67733.html</a></p></div><div class="content"><div id="vip-container"><h2 id="ZGC介绍"><a href="#ZGC介绍" class="headerlink" title="ZGC介绍"></a>ZGC介绍</h2><p>ZGC（The Z Garbage Collector）是JDK 11中推出的一款追求极致低延迟的实验性质的垃圾收集器，它曾经设计目标包括：</p>
+<ul>
+<li>停顿时间不超过10ms；</li>
+<li>停顿时间不会随着堆的大小，或者活跃对象的大小而增加；</li>
+<li>支持8MB~4TB级别的堆（未来支持16TB）。</li>
+</ul>
+<p>当初，提出这个目标的时候，有很多人都觉得设计者在吹牛逼。</p>
+<p>但今天看来，这些“吹下的牛逼”都在一个个被实现。</p>
+<p>基于最新的JDK15来看，“停顿时间不超过10ms”和“支持16TB的堆”这两个目标已经实现，并且官方明确指出JDK15中的ZGC不再是实验性质的垃圾收集器，且建议投入生产了。</p>
+<p>本文会从ZGC的设计思路出发，讲清楚为何ZGC能在低延时场景中的应用中有着如此卓越的表现。</p>
+<h2 id="核心技术"><a href="#核心技术" class="headerlink" title="核心技术"></a>核心技术</h2><h3 id="多重映射"><a href="#多重映射" class="headerlink" title="多重映射"></a>多重映射</h3><p>为了能更好的理解ZGC的内存管理，我们先看一下这个例子：</p>
+<p>你在你爸爸妈妈眼中是儿子，在你女朋友眼中是男朋友。在全世界人面前就是最帅的人。你还有一个名字，但名字也只是你的一个代号，并不是你本人。将这个关系画一张映射图表示：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/af4868b7d5f54a049eb56b9d1263dc65~tplv-k3u1fbpfcp-zoom-1.image"  width="90%;" />
+</div>
+
+<ul>
+<li>在你爸爸的眼中，你就是儿子；</li>
+<li>在你女朋友的眼中，你就说男朋友；</li>
+<li>站在全世界角度来看，你就说世界上最帅的人；</li>
+</ul>
+<p>假如你的名字是全世界唯一的，通过“你的名字”、“你爸爸的儿子”、“你女朋友的男朋友”，“世界上最帅的人”最后定位到的都是你本人。</p>
+<p>现在我们再来看看ZGC的内存管理。</p>
+<p>ZGC为了能高效、灵活地管理内存，实现了两级内存管理：虚拟内存和物理内存，并且实现了物理内存和虚拟内存的映射关系。这和操作系统中虚拟地址和物理地址设计思路基本一致。</p>
+<p>当应用程序创建对象时，首先在堆空间申请一个虚拟地址，ZGC同时会为该对象在Marked0、Marked1和Remapped三个视图空间分别申请一个虚拟地址，且这三个虚拟地址对应同一个物理地址。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f6a8b1e4397c4f4c816361095c5a13b3~tplv-k3u1fbpfcp-zoom-1.image"  width="90%;" />
+</div>
+
+
+
+<p>图中的Marked0、Marked1和Remapped三个视图是什么意思呢？</p>
+<p>对照上面的例子，这三个视图分别对应的就是”你爸爸眼中”，“你女朋友的眼中”，“全世界人眼中”。</p>
+<p>而三个视图里面的地址，都是虚拟地址，对应的是“你爸爸眼中的儿子”，“你女朋友眼中的男朋友”……</p>
+<p>最后，这些虚地址都能定位到一个物理地址，这个物理地址对应上面例子中的“你本人”。</p>
+<p>用一段简单的Java代码表示就是这样的：</p>
+<div align = "center" width="50%;">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/992a5261980a481ba2a1294a0276d7d9~tplv-k3u1fbpfcp-zoom-1.image"  style="zoom:90%;" width="70%;" />
+</div>
+
+<p>在ZGC中这三个空间在同一时间点有且仅有一个空间有效。</p>
+<p>为什么这么设计呢？这就是ZGC的高明之处，利用虚拟空间换时间，这三个空间的切换是由垃圾回收的不同阶段触发的，通过限定三个空间在同一时间点有且仅有一个空间有效高效的完成GC过程的并发操作，具体实现会后面讲ZGC并发处理算法的部分再详细描述。</p>
+<h3 id="染色指针"><a href="#染色指针" class="headerlink" title="染色指针"></a>染色指针</h3><p>在讲ZGC并发处理算法之前，还需要补充一个知识点——染色指针。</p>
+<p>我们都知道，之前的垃圾收集器都是把GC信息（标记信息、GC分代年龄..）存在对象头的Mark Word里。举个例子：</p>
+<p>如果某个人是个垃圾人，就在这个人的头上盖一个“垃圾”的章；如果这个人不是垃圾了，就把这个人头上的“垃圾”印章洗掉。</p>
+<p>而ZGC是这样做的：</p>
+<p>如果某个人是垃圾人。就在这个人的身份证信息里面标注这个人是个垃圾，以后不管这个人在哪刷身份证，别人都知道他是个垃圾人了。也许哪一天，这个人醒悟了不再是垃圾人了，就把这个人身份证里面的“垃圾”标志去掉。</p>
+<p>在这例子中，“这个人”就是一个对象，而“身份证”就是指向这个对象的指针。</p>
+<p>ZGC将信息存储在指针中，这种技术有一个高大上的名字——染色指针（Colored Pointer）。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bd16ddd2985146dd94b0c43cfdb2e23f~tplv-k3u1fbpfcp-zoom-1.image"  width="95%;" />
+</div>
+
+<p>在64位的机器中，对象指针是64位的。</p>
+<ul>
+<li>ZGC使用64位地址空间的第0~43位存储对象地址，2^44 = 16TB，所以ZGC最大支持16TB的堆。</li>
+<li>而第44~47位作为颜色标志位，Marked0、Marked1和Remapped代表三个视图标志位，Finalizable表示这个对象只能通过finalizer才能访问。</li>
+<li>第48~63位固定为0没有利用。</li>
+</ul>
+<h3 id="读屏障"><a href="#读屏障" class="headerlink" title="读屏障"></a>读屏障</h3><p>读屏障是JVM向应用代码插入一小段代码的技术。当应用线程从堆中读取对象引用时，就会执行这段代码。千万不要把这个读屏障和Java内存模型里面的读屏障搞混了，两者根本不是同一个东西，ZGC中的读屏障更像是一种AOP技术，在字节码层面或者编译代码层面给读操作增加一个额外的处理。</p>
+<p>读屏障实例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Object o = obj.FieldA      <span class="comment">// 从堆中读取对象引用，需要加入读屏障</span></span><br><span class="line">&lt;load barrier needed here&gt;</span><br><span class="line">  </span><br><span class="line">Object p = o               <span class="comment">// 无需加入读屏障，因为不是从堆中读取引用</span></span><br><span class="line">o.dosomething()            <span class="comment">// 无需加入读屏障，因为不是从堆中读取引用</span></span><br><span class="line"><span class="keyword">int</span> i =  obj.FieldB        <span class="comment">// 无需加入读屏障，因为不是对象引用</span></span><br></pre></td></tr></table></figure>
+
+<p>ZGC中读屏障的代码作用：</p>
+<p>GC线程和应用线程是并发执行的，所以存在应用线程去A对象内部的引用所指向的对象B的时候，这个对象B正在被GC线程移动或者其他操作，加上读屏障之后，应用线程会去探测对象B是否被GC线程操作，然后等待操作完成再读取对象，确保数据的准确性。具体的探测和操作步骤如下：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7b480976a8de4db59f123c4f24824223~tplv-k3u1fbpfcp-zoom-1.image"  width="95%;" />
+</div>
+
+
+
+<p>这样会影响程序的性能吗？</p>
+<p>会。据测试，最多百分之4的性能损耗。但这是ZGC并发转移的基础，为了降低STW，设计者认为这点牺牲是可接受的。</p>
+<h2 id="ZGC并发处理算法"><a href="#ZGC并发处理算法" class="headerlink" title="ZGC并发处理算法"></a>ZGC并发处理算法</h2><p>ZGC并发处理算法利用全局空间视图的切换和对象地址视图的切换，结合SATB算法实现了高效的并发。</p>
+<p>以上所有的铺垫，都是为了讲清楚ZGC的并发处理算法，在一些博文上，都说染色指针和读屏障是ZGC的核心，但都没有讲清楚两者是如何在算法里面被利用的，我认为，ZGC的并发处理算法才是ZGC的核心，染色指针和读屏障只不过是为算法服务而已。</p>
+<p>ZGC的并发处理算法三个阶段的全局视图切换如下：</p>
+<ul>
+<li>初始化阶段：ZGC初始化之后，整个内存空间的地址视图被设置为Remapped</li>
+<li>标记阶段：当进入标记阶段时的视图转变为Marked0（以下皆简称M0）或者Marked1（以下皆简称M1）</li>
+<li>转移阶段：从标记阶段结束进入转移阶段时的视图再次设置为Remapped</li>
+</ul>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c14ff5e3be6b47149ef206c24c7d9c9a~tplv-k3u1fbpfcp-zoom-1.image"  width="60%;" />
+</div>
+
+<h3 id="标记阶段"><a href="#标记阶段" class="headerlink" title="标记阶段"></a>标记阶段</h3><p>标记阶段全局视图切换到M0视图。因为应用程序和标记线程并发执行，那么对象的访问可能来自标记线程和应用程序线程。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8c16f6186b27431a9431a2e642877a85~tplv-k3u1fbpfcp-zoom-1.image"  width="95%;" />
+</div>
+
+<p>在标记阶段结束之后，对象的地址视图要么是M0，要么是Remapped。</p>
+<ul>
+<li>如果对象的地址视图是M0，说明对象是活跃的；</li>
+<li>如果对象的地址视图是Remapped，说明对象是不活跃的，即对象所使用的内存可以被回收。</li>
+</ul>
+<p>当标记阶段结束后，ZGC会把所有活跃对象的地址存到<strong>对象活跃信息表</strong>，活跃对象的地址视图都是M0。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/fd7da4998bc04f8986cb2ddef73d3675~tplv-k3u1fbpfcp-zoom-1.image"  width="50%;" />
+</div>
+
+<h3 id="转移阶段"><a href="#转移阶段" class="headerlink" title="转移阶段"></a>转移阶段</h3><p>转移阶段切换到Remapped视图。因为应用程序和转移线程也是并发执行，那么对象的访问可能来自转移线程和应用程序线程。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4dab75bd45bc4f3a827e243f8a97558a~tplv-k3u1fbpfcp-zoom-1.image"  width="95%;" />
+</div>
+
+<p>至此，ZGC的一个垃圾回收周期中，并发标记和并发转移就结束了。</p>
+<h3 id="为何要设计M0和M1"><a href="#为何要设计M0和M1" class="headerlink" title="为何要设计M0和M1"></a>为何要设计M0和M1</h3><p>我们提到在标记阶段存在两个地址视图M0和M1，上面的算法过程显示只用到了一个地址视图，为什么设计成两个？简单地说是为了区别前一次标记和当前标记。</p>
+<p>ZGC是按照页面进行部分内存垃圾回收的，也就是说当对象所在的页面需要回收时，页面里面的对象需要被转移，如果页面不需要转移，页面里面的对象也就不需要转移。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/72d78777ff29464993b7a6ae5f4c0edd~tplv-k3u1fbpfcp-zoom-1.image"  width="80%;" />
+</div>
+
+<p>如图，这个对象在第二次GC周期开始的时候，地址视图还是M0。如果第二次GC的标记阶段还切到M0视图的话，就不能区分出对象是活跃的，还是上一次垃圾回收标记过的。这个时候，第二次GC周期的标记阶段切到M1视图的话就可以区分了，此时这3个地址视图代表的含义是：</p>
+<ul>
+<li><p>M1：本次垃圾回收中识别的活跃对象。</p>
+</li>
+<li><p>M0：前一次垃圾回收的标记阶段被标记过的活跃对象，对象在转移阶段未被转移，但是在本次垃圾回收中被识别为不活跃对象。</p>
+</li>
+<li><p>Remapped：前一次垃圾回收的转移阶段发生转移的对象或者是被应用程序线程访问的对象，但是在本次垃圾回收中被识别为不活跃对象。</p>
+</li>
+</ul>
+<p>现在，我们可以回答“使用地址视图和染色指针有什么好处”这个问题了</p>
+<p>使用地址视图和染色指针可以加快标记和转移的速度。以前的垃圾回收器通过修改对象头的标记位来标记GC信息，这是有内存存取访问的，而ZGC通过地址视图和染色指针技术，无需任何对象访问，只需要设置地址中对应的标志位即可。这就是ZGC在标记和转移阶段速度更快的原因。</p>
+<p>当GC信息不再存储在对象头上时而存在引用指针上时，当确定一个对象已经无用的时候，可以立即重用对应的内存空间，这是把GC信息放到对象头所做不到的。</p>
+<h2 id="ZGC步骤"><a href="#ZGC步骤" class="headerlink" title="ZGC步骤"></a>ZGC步骤</h2><p>ZGC采用的是标记-复制算法，标记、转移和重定位阶段几乎都是并发的，ZGC垃圾回收周期如下图所示：</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/8c9f18f9bee5405781379ee9e0ecf383~tplv-k3u1fbpfcp-zoom-1.image"  width="95%;" />
+</div>
+
+<p>ZGC只有三个STW阶段：<strong>初始标记</strong>，<strong>再标记</strong>，<strong>初始转移</strong>。</p>
+<p>其中，初始标记和初始转移分别都只需要扫描所有GC Roots，其处理时间和GC Roots的数量成正比，一般情况耗时非常短；</p>
+<p>再标记阶段STW时间很短，最多1ms，超过1ms则再次进入并发标记阶段。即，ZGC几乎所有暂停都只依赖于GC Roots集合大小，停顿时间不会随着堆的大小或者活跃对象的大小而增加。与ZGC对比，G1的转移阶段完全STW的，且停顿时间随存活对象的大小增加而增加。</p>
+<h2 id="ZGC的发展"><a href="#ZGC的发展" class="headerlink" title="ZGC的发展"></a>ZGC的发展</h2><p>ZGC诞生于JDK11，经过不断的完善，JDK15中的ZGC已经不再是实验性质的了。</p>
+<p>从只支持Linux/x64，到现在支持多平台；从不支持指针压缩，到支持压缩类指针….. </p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/0badceaee35d4aa0981110d3bc94f334~tplv-k3u1fbpfcp-zoom-1.image"  width="80%;" />
+</div>
+
+<p>在JDK16，ZGC将支持并发线程栈扫描（Concurrent Thread Stack Scanning），根据<strong>SPECjbb2015测试</strong>结果，实现并发线程栈扫描之后，ZGC的STW时间又能降低一个数量级，停顿时间将进入毫秒时代。</p>
+<div align = "center">
+<img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image"  width="80%;" />
+</div>
+
+<p>ZGC已然是一款优秀的垃圾收集器了，它借鉴了Pauseless GC，也似乎在朝着C4 GC的方向发展——引入分代思想。</p>
+<p>Oracle的努力，让我们开发者看到了商用级别的GC“飞入寻常百姓家”的希望，随着JDK的发展，我相信在未来的某一天，JVM调优这种反人类的操作将不复存在，底层的GC会自适应各种情况自动优化。</p>
+<p>ZGC确实是Java的最前沿的技术，但在G1都没有普及的今天，谈论ZGC似乎为时过早。但也许我们探讨的不是ZGC，而是ZGC背后的设计思路。</p>
+<p>希望你能有所收获！</p>
+<h2 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h2><p>为了对每一篇发出去的文章负责，力求准确，我一般是参考官方文档和业界权威的书籍，有些时候，还需要看一些论文，看一部分源代码。而官方文档和论文一般都是英文，对于一个英语四级只考了456分的人来说，非常艰难，整个过程都是谷歌翻译和有道词典陪伴着我的。因为一些专业术语翻译的不够准确，还需要英文和翻译对照慢慢理解。</p>
+<p>但即使这样，也难免会有纰漏，如果你发现了，欢迎提出，我会对其修正。</p>
+<p>你的正反馈对我来说非常重要，点个赞，点个关注都是对我最大的支持！</p>
+<p>如果你有什么想和我交流的，可以关注我的微信公众号“CoderW”，非常欢迎并感谢您的关注！</p>
+<p>谢谢您的阅读，我们下期再见！</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/ag5u2EPObx7bZr7hkcrOTg">https://mp.weixin.qq.com/s/ag5u2EPObx7bZr7hkcrOTg</a></li>
+<li>《新一代垃圾回收器ZGC设计与实现》</li>
+</ul>
+</div>
+
+			<script src="https://my.openwrite.cn/js/readmore.js" type="text/javascript"></script>
+			<script>
+			var isMobile = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+			if (!isMobile) {
+			    var btw = new BTWPlugin();
+			    btw.init({
+			        "id": "vip-container",
+			        "blogId": "25050-1619793587407-161",
+			        "name": "CoderW",
+			        "qrcode": "https://img-blog.csdnimg.cn/20210430234341147.png",
+			        "keyword": "文章"
+			    });
+			}
+			</script>
+		</div><div class="article-licensing box"><div class="licensing-title"><p>来自未来的技术——ZGC垃圾回收器</p><p><a href="https://www.wangheng.online/archives/5f67733.html">https://www.wangheng.online/archives/5f67733.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-04-09</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-05-16</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 相关文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思！</a><br></span><span>  2.<a class="is-size-6" href="/archives/d58084d9.html" target="_blank">Java中，那些关于String和字符串常量池你不得不知道的东西</a><br></span><span>  3.<a class="is-size-6" href="/archives/4bada684.html" target="_blank">String s = new String(&quot;xyz&quot;)创建了几个实例你真的能答对吗？</a><br></span><span>  4.<a class="is-size-6" href="/archives/f76d216a.html" target="_blank">你知道Java中final和static修饰的变量是在什么时候赋值的吗？</a><br></span></div><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思！</a><br></span><span>  2.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span><span>  3.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/7a85ad07.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/8a98c2c7.html"><span class="level-item">深入汇编指令解析Java关键字volatile</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
+            var gitalk = new Gitalk({
+            language:'zh-CN',
+            id: 'f6a74cb5945e6696391f0350c42f341f',
+            repo: 'xiaoyingzhi.github.io',
+            owner: 'xiaoyingzhi',
+            clientID: '6d30d2adb400a68b3378',
+            clientSecret: 'c8dfac0a2197e87a9d0cf010e389267bfd576c4e',
+            admin: ["xiaoyingzhi"],
+            createIssueManually: true,
+            distractionFreeMode: false,
+            perPage: 10,
+            pagerDirection: 'last',
+            proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token',
+            
+            enableHotKey: true,
+            isLocked: false
+        })
+        gitalk.render('comment-container')});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex is-mobile" href="#ZGC介绍"><span>ZGC介绍</span></a></li><li><a class="is-flex is-mobile" href="#核心技术"><span>核心技术</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#多重映射"><span>多重映射</span></a></li><li><a class="is-flex is-mobile" href="#染色指针"><span>染色指针</span></a></li><li><a class="is-flex is-mobile" href="#读屏障"><span>读屏障</span></a></li></ul></li><li><a class="is-flex is-mobile" href="#ZGC并发处理算法"><span>ZGC并发处理算法</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#标记阶段"><span>标记阶段</span></a></li><li><a class="is-flex is-mobile" href="#转移阶段"><span>转移阶段</span></a></li><li><a class="is-flex is-mobile" href="#为何要设计M0和M1"><span>为何要设计M0和M1</span></a></li></ul></li><li><a class="is-flex is-mobile" href="#ZGC步骤"><span>ZGC步骤</span></a></li><li><a class="is-flex is-mobile" href="#ZGC的发展"><span>ZGC的发展</span></a></li><li><a class="is-flex is-mobile" href="#写在最后"><span>写在最后</span></a></li><li><a class="is-flex is-mobile" href="#参考资料"><span>参考资料</span></a></li></ul></div></div><style>.menu-list > li > a.is-active + .menu-list { display: block; }.menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">12</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">6</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">11</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">欢迎关注微信公众号CoderW</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">个人微信公众号</h3><ul><li><span><span><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/dc1c4429a3fd4849bbda8eb442c8f2d9~tplv-k3u1fbpfcp-watermark.image"/></span></span></li></ul></div></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新评论</h3><span class="body_hot_comment">加载中，最新评论有1分钟缓存...</span></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/archives/491288aa.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="这段关于安全点的JVM源码有点意思！"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-05-16T05:11:47.000Z">2021-05-16</time></p><p class="title"><a href="/archives/491288aa.html">这段关于安全点的JVM源码有点意思！</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/7a85ad07.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a4d066b9168c428eb57654bc517946f2~tplv-k3u1fbpfcp-watermark.image" alt="一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-18T14:24:37.000Z">2021-04-18</time></p><p class="title"><a href="/archives/7a85ad07.html">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/5f67733.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/d164e54144b440dfbd489654422170bf~tplv-k3u1fbpfcp-zoom-1.image" alt="来自未来的技术——ZGC垃圾回收器"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-09T03:54:27.000Z">2021-04-09</time></p><p class="title"><a href="/archives/5f67733.html">来自未来的技术——ZGC垃圾回收器</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/8a98c2c7.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e3a69ac5dfad45f993bc5309739f8c6b~tplv-k3u1fbpfcp-zoom-1.image" alt="深入汇编指令解析Java关键字volatile"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-01T19:17:05.000Z">2021-04-02</time></p><p class="title"><a href="/archives/8a98c2c7.html">深入汇编指令解析Java关键字volatile</a></p><p class="categories"><a href="/categories/Java/">Java</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/d58084d9.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3df7898981dc446c870712fd25cc2339~tplv-k3u1fbpfcp-zoom-1.image" alt="Java中，那些关于String和字符串常量池你不得不知道的东西"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-03-20T03:41:04.000Z">2021-03-20</time></p><p class="title"><a href="/archives/d58084d9.html">Java中，那些关于String和字符串常量池你不得不知道的东西</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile is-marginless" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/MySQL/"><span class="level-start"><span class="level-item">MySQL</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="level-start"><span class="level-item">程序人生</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag is-grey-lightest">8</span></a></div><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag is-grey-lightest">6</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag is-grey-lightest">3</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Bug%E5%AE%9A%E4%BD%8D/"><span class="tag">Bug定位</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="tag">数据库</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/H2/"><span class="tag">H2</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/MySQL/"><span class="tag">MySQL</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/"><span class="tag">常量池</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="tag">程序人生</span><span class="tag is-grey-lightest">1</span></a></div></div></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a><p class="size-small"><span>&copy; 2021 CoderW</span><br><span><span id="statistic-times">loading...</span><script>function createTime(time) {
+            var n = new Date(time);
+            now.setTime(now.getTime() + 250),
+                days = (now - n) / 1e3 / 60 / 60 / 24,
+                dnum = Math.floor(days),
+                hours = (now - n) / 1e3 / 60 / 60 - 24 * dnum,
+                hnum = Math.floor(hours),
+            1 == String(hnum).length && (hnum = "0" + hnum),
+                minutes = (now - n) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
+                mnum = Math.floor(minutes),
+            1 == String(mnum).length && (mnum = "0" + mnum),
+                seconds = (now - n) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
+                snum = Math.round(seconds),
+            1 == String(snum).length && (snum = "0" + snum),
+                document.getElementById("statistic-times").innerHTML = "本站自 <strong>"+time.split(" ")[0].replace(/\//g,".")+"</strong> 已运行 <strong>" + dnum + "</strong> 天 <strong>" + hnum + "</strong> 小时 <strong>" + mnum + "</strong> 分 <strong>" + snum + "</strong> 秒️";
+        }var now = new Date();setInterval("createTime('2019/03/01 00:00:00')", 250,"");</script><br></span><div class="size-small"><span>访问人数: <strong><span id="busuanzi_value_site_uv">99+</span></strong> 访问量: <strong><span id="busuanzi_value_site_pv">99+</span></strong>️</span></div></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" async></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><script>$.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);})</script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script><script type="text/javascript">var pjax = new Pjax({
+            elements: "a",//代表点击链接就更新
+            selectors: [  //代表要更新的节点
+                ".section",
+                "title"
+            ],
+            cache: true,
+            cacheBust:false
+        })
+
+        function loadBusuanzi(){
+        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
+        }
+
+        function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\(', '\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };
+
+        // 开始 PJAX 执行的函数
+        document.addEventListener('pjax:send', function () {
+        });
+        
+        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
+        document.addEventListener('pjax:complete', function () {
+            $(".section").css({opacity:1});
+            if(true){
+                $.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);});
+            }
+            if(false){
+                loadMathJax();
+            }
+            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
+            loadBackTop();
+            loadBusuanzi();
+            if(typeof loadBanner == 'function'){
+                loadBanner();
+            }
+        });</script></body></html>
