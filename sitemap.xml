@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://www.wangheng.online/archives/cd29407f.html</loc>
+    
+    <lastmod>2021-11-11</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/archives/336df028.html</loc>
     
     <lastmod>2021-11-11</lastmod>
@@ -123,6 +130,20 @@
 
   
   <url>
+    <loc>https://www.wangheng.online/tags/Java/</loc>
+    <lastmod>2021-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.wangheng.online/tags/JVM/</loc>
+    <lastmod>2021-11-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://www.wangheng.online/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-11-11</lastmod>
     <changefreq>daily</changefreq>
@@ -138,20 +159,6 @@
   
   <url>
     <loc>https://www.wangheng.online/tags/Bug%E5%AE%9A%E4%BD%8D/</loc>
-    <lastmod>2021-11-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/Java/</loc>
-    <lastmod>2021-11-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.wangheng.online/tags/JVM/</loc>
     <lastmod>2021-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
@@ -216,14 +223,14 @@
 
   
   <url>
-    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
+    <loc>https://www.wangheng.online/categories/JVM/</loc>
     <lastmod>2021-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
-    <loc>https://www.wangheng.online/categories/JVM/</loc>
+    <loc>https://www.wangheng.online/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
     <lastmod>2021-11-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
