@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>3000帧动画图解MySQL为什么需要binlog、redo log和undo log - CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="msapplication-TileImage" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="3000帧动画图解MySQL为什么需要binlog、redo log和undo log"><meta property="og:type" content="blog"><meta property="og:title" content="3000帧动画图解MySQL为什么需要binlog、redo log和undo log"><meta property="og:url" content="https://www.wangheng.online/archives/37862190.html"><meta property="og:site_name" content="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper"><meta property="og:description" content="3000帧动画图解MySQL为什么需要binlog、redo log和undo log"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1e85fb182dd74064ab0a0ae23bcd1592~tplv-k3u1fbpfcp-zoom-1.image"><meta property="article:published_time" content="2021-07-10T09:39:38.000Z"><meta property="article:modified_time" content="2021-11-11T09:53:26.834Z"><meta property="article:author" content="CoderW"><meta property="article:tag" content="MySQL"><meta property="article:tag" content="binlog"><meta property="article:tag" content="redo log"><meta property="article:tag" content="undo log"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1e85fb182dd74064ab0a0ae23bcd1592~tplv-k3u1fbpfcp-zoom-1.image"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.wangheng.online/archives/37862190.html"},"headline":"CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper","image":[],"datePublished":"2021-07-10T09:39:38.000Z","dateModified":"2021-11-11T09:53:26.834Z","author":{"@type":"Person","name":"CoderW"},"description":"3000帧动画图解MySQL为什么需要binlog、redo log和undo log"}</script><link rel="canonical" href="https://www.wangheng.online/archives/37862190.html"><link rel="icon" href="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6006b260850d4726919d62b8c1a54eb3~tplv-k3u1fbpfcp-watermark.image"><meta name="referrer" content="no-referrer-when-downgrade"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css?family=Ubuntu:400,600|Source+Code+Pro|Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|Microsoft YaHei:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&amp;amp;subset=latin,latin-ext|Inconsolata|Itim|Lobster.css"><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="/js/globalUtils.js"></script><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><script src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" defer></script><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script><meta name="generator" content="Hexo 5.4.0"></head><body class="is-3-column has-navbar-fixed-top"><nav class="navbar navbar-main is-fixed-top"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/archives">文章</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a><a class="navbar-item" id="night-nav" title="Night Mode" href="javascript:;"><i class="fas fa-moon" id="night-icon"></i></a></div></div></div></nav><script type="text/javascript" src="/js/theme-setting.js"></script><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><!--!--><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><span class="level-item copyright article-title type-2">原创</span><span class="level-item"><time dateTime="2021-07-10T09:39:38.000Z" title="2021-07-10T09:39:38.000Z">2021-07-10</time>发表</span><span class="level-item">10 分钟读完 (大约3512个字)</span><span class="level-item" id="busuanzi_container_page_pv"><span id="busuanzi_value_page_pv">0</span>次访问</span><a class="commentCountImg" href="/archives/37862190.html#comment-container"><span class="display-none-class">f739284084bfc4ab30e016c4591f6bd7</span><i class="far fa-comment-dots"></i> <span class="commentCount" id="f739284084bfc4ab30e016c4591f6bd7">99+</span>  </a></div><div class="pin-icon"><i class="fas fa-thumbtack"></i></div></div><h1 class="title is-3 is-size-4-mobile">3000帧动画图解MySQL为什么需要binlog、redo log和undo log</h1><div class="copyright article-block type-2"><p>版权申明：本文为原创文章，转载请注明原文出处</p><p>原文链接：<a href="https://www.wangheng.online/archives/37862190.html" target="_blank">https://www.wangheng.online/archives/37862190.html</a></p></div><div class="content"><p>从一条SQL的执行讲起：</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cc94d98ac3c9445aa1db13c2223b5aeb~tplv-k3u1fbpfcp-zoom-1.image" alt="20210602013829"></p>
+<p>就算是一条简简单单的更新语句，也要经过MySQL的Server层和存储引擎层</p>
+<h2 id="InnoDB存储引擎"><a href="#InnoDB存储引擎" class="headerlink" title="InnoDB存储引擎"></a>InnoDB存储引擎</h2><p>从上面的SQL执行图可以看出，数据的落盘和日志的记录都与InnoDB存储引擎有着密切的关系。</p>
+<p>那存储引擎到底是什么呢？</p>
+<p>“引擎”一词来源于发动机，它是发动机中的核心部分，后面引申到软件工程领域，代表的是软件或者系统的核心。</p>
+<p>在MySQL中，核心的存储数据的模块被称为存储引擎。</p>
+<p>在MySQL中，存储引擎是插件式的，用户可以根据不同的需求去使用不同的存储引擎。</p>
+<p>把存储引擎插件化有什么好处呢？</p>
+<p>我认为有以下三点好处：</p>
+<ol>
+<li>将Server层与存储引擎解耦，留下扩展点，方便后续的迭代与发展</li>
+<li>让用户有更多的选择，根据不同的需求选择合适的存储引擎</li>
+<li>让MySQL便于结合更多优秀的存储引擎</li>
+</ol>
+<p>我这三点推断并不是空穴来风，不信我和你一起回顾一下MySQL的发展史:</p>
+<ul>
+<li><p>MySQL最初搭载的存储引擎是自研的只支持简单的查询的MyISAM的前身ISAM</p>
+</li>
+<li><p>后来与Sleepycat合作研发了Berkeley DB引擎，支持了事务</p>
+</li>
+</ul>
+<p>但尽管如此，MySQL这些自研的存储引擎在很大一部分场景都干不过InnobaseOy公司的InnoDB存储引擎。</p>
+<p>怎么办呢？打不过就加入呗。</p>
+<p>我有我的SQL技术，你有你的存储技术，我们何不合作共同发展呢？</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/3570f23bd98246649889e9c98ca0c33b~tplv-k3u1fbpfcp-zoom-1.image" alt="dac"></p>
+<p>于是在2001年，MySQL所在的公司和InnobaseOy公司合作，决定在MySQL中集成InnoDB存储引擎。</p>
+<p>因为MySQL存储引擎的插件化设计，两个公司合作的非常轻松与愉快，很快就发布了MySQL4.0正式支持功能强大的InnoDB。</p>
+<p>虽说不能把MySQL的成功全部归功于存储引擎的插件化设计，但不得不说，存储引擎插件化大大加速了MySQL的发展。</p>
+<p>从发展史也可以了解到，InnoDB一开始并不是MySQL的一部分，只是后来被集成到了MySQL里面。这一点很关键，后面还会再次提到。</p>
+<h2 id="Buffer-Pool"><a href="#Buffer-Pool" class="headerlink" title="Buffer Pool"></a>Buffer Pool</h2><p>在InnoDB里，有一块非常重要的结构——Buffer Pool。</p>
+<p>Buffer Pool是个什么东西呢？</p>
+<p>Buffer Pool就是一个缓存磁盘数据的内存空间，将磁盘IO操作转换成内存操作，提高执行效率。</p>
+<p>讲白了，就是将磁盘上的数据放到内存中来，有什么操作直接在内存中执行，不需要每次都去磁盘上取数据，然后操作完后再将数据刷到磁盘。</p>
+<p>通过一个例子说明，假设要执行3个更新SQL，将age=1这个数据依次更新成2、3、4。</p>
+<p>如果没有Buffer Pool，那执行就是这样的：</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/23a7741e3eda4482aae3fbbd9955d5e8~tplv-k3u1fbpfcp-zoom-1.image" alt="7"></p>
+<p>每次更新都需要从磁盘拿数据，修改完了需要刷到磁盘，3次更新一共有6次磁盘IO。</p>
+<p>而有了Buffer Pool，执行就成了这样：</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/958549fddd1b486db447095989a2c76c~tplv-k3u1fbpfcp-zoom-1.image" alt="8"></p>
+<p>一共执行了1次IO操作，20次内存操作。</p>
+<p>上面这个例子，执行10条SQL，有了Buffer Pool之后，节省了19次的磁盘IO。</p>
+<p>当然，Buffer Pool真正的运转流程没有这么简单，具体实现细节和优化技巧还有很多，由于篇幅有限，本文不做详细描述。</p>
+<p>我们需要明白的是，Buffer Pool就是将磁盘IO转换成了内存IO，提高了执行效率。</p>
+<p>Buffer Pool是提高了效率没错，但是出现了一个问题，Buffer Pool存在于内存中，而只要一断电或者MySQL所在服务器挂掉，内存里面的数据就会全部丢失。</p>
+<p>如果断电的时候Buffer Pool的数据还没来得及刷到磁盘，那么这些数据就丢失了。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ac63ee66dfe34d31b6978333d71e7317~tplv-k3u1fbpfcp-zoom-1.image" alt="9"></p>
+<p>试想一下，如果这些丢失的数据里面有你给女神买包的订单信息，你能不能接受？</p>
+<p>反正我是不能接受。</p>
+<p>那InnoDB是如何做到数据不会丢失的呢？</p>
+<p>今天的第一个日志——redo log登场了。</p>
+<h2 id="redo-log"><a href="#redo-log" class="headerlink" title="redo log"></a>redo log</h2><p>从名字上面来看，redo是重做的意思，redo log就是重做日志的意思。</p>
+<p>具体来说，就是在修改之后，先将修改后的值记录到磁盘上的redo log中，就算突然断电了，Buffer Pool中的数据全部丢失了，来电的时候也可以根据redo log恢复Buffer Pool，这样既利用到了Buffer Pool的内存高效性，也保证了数据不会丢失。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/7075b6134cff465aa8c6b3fe5941c4d5~tplv-k3u1fbpfcp-zoom-1.image" alt="10"></p>
+<p>那么问题来了，redo log文件也在磁盘上，数据文件也在磁盘上，都是磁盘操作，何必多次一举？为什么不直接将修改的数据写到数据文件里面去呢？</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/911e0dbf752c4277b2ba460fa9fe82d9~tplv-k3u1fbpfcp-zoom-1.image" alt="20190530160425_WPnCfH"></p>
+<p>一句话回答就是：redo log是磁盘顺序写，数据刷盘是磁盘随机写。磁盘的顺序写比随机写高效的多。</p>
+<p>所以啊，这一波先记redo log还是有用的。</p>
+<p>在关系数据库中，这种先预写日志后面再将数据刷盘的机制，有一个高大上的专业名词——WAL（Write-ahead logging），翻译成中文就是预写式日志。</p>
+<p>面试的时候，你要是满嘴这些高大上的名词，面试官很难不抬头打量你呀。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bb243d14b2004dc0992f84fae29d52ae~tplv-k3u1fbpfcp-zoom-1.image" alt="88b7b2fdaffee627ed2ea65357b30929"></p>
+<p>言归正传，redo log并不是直接记到磁盘的redo log文件里面，而是先记录在一个叫redo log buffer的地方，redo log buffer和Buffer Pool类似，起到了一个缓冲的作用。</p>
+<p>参数innodb_flush_log_at_trx_commit用来控制redo log的刷盘策略，设置不同的值同步redo log的策略也是不一样的。</p>
+<p>这个参数 有3个值可以设置：</p>
+<h3 id="innodb-flush-log-at-trx-commit-0：延迟写，延迟刷"><a href="#innodb-flush-log-at-trx-commit-0：延迟写，延迟刷" class="headerlink" title="innodb_flush_log_at_trx_commit  = 0：延迟写，延迟刷"></a>innodb_flush_log_at_trx_commit  = 0：延迟写，延迟刷</h3><p>这种策略在事务提交时不会向磁盘中同步redo log，这个同步的工作由后台线程定时去做。</p>
+<p>这种策略效率是最高的，但是如果事务提交后服务器挂了，后台线程又没有及时将redo log刷新到磁盘，那么该事务对页面的修改会丢失。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/681f64f5dbd34d31abd96fa7393da6f5~tplv-k3u1fbpfcp-zoom-1.image" alt="17"></p>
+<h3 id="innodb-flush-log-at-trx-commit-1：实时写，实时刷"><a href="#innodb-flush-log-at-trx-commit-1：实时写，实时刷" class="headerlink" title="innodb_flush_log_at_trx_commit  = 1：实时写，实时刷"></a>innodb_flush_log_at_trx_commit  = 1：实时写，实时刷</h3><p>这种策略会在每次事务提交之前，将对应的redo log刷到磁盘中去，理论上只要磁盘不出问题，数据就不会丢失。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/6da1883128954f42af2cb051d551e527~tplv-k3u1fbpfcp-zoom-1.image" alt="18"></p>
+<h3 id="innodb-flush-log-at-trx-commit-2：实时写，延迟刷"><a href="#innodb-flush-log-at-trx-commit-2：实时写，延迟刷" class="headerlink" title="innodb_flush_log_at_trx_commit  = 2：实时写，延迟刷"></a>innodb_flush_log_at_trx_commit  = 2：实时写，延迟刷</h3><p>这种策略在事务提交之前会把redo log写到os cache中，但并不会实时地将日志刷新到磁盘。</p>
+<p>这种情况下如果MySQL进程挂了，操作系统没挂的话，操作系统还是会将os cache刷到磁盘，数据不会丢失。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/82020f069ff24c68aab1ade45c0270c8~tplv-k3u1fbpfcp-zoom-1.image" alt="16"></p>
+<p>但如果MySQL所在的服务器挂掉了，也就是操作系统也挂了，那么os cache也会被清空，数据就丢失了。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/bfac107f1e4e4d579f07bc63610a3af7~tplv-k3u1fbpfcp-zoom-1.image" alt="19"></p>
+<p>信我，别整那么花里胡哨的，参数innodb_flush_log_at_trx_commit你就老老实实用默认的1就行了，不丢数据不背锅，非常的香。</p>
+<h2 id="undo-log"><a href="#undo-log" class="headerlink" title="undo log"></a>undo log</h2><p>我们都知道，InnoDB是支持事务的，而事务是可以回滚的。</p>
+<p>假如一个事务将age=1修改成了age=2，在事务还没有提交的时候，后台线程已经将age=2刷入了磁盘。这个时候，不管是内存还是磁盘上，age都变成了2，如果事务要回滚，找不到修改之前的age=1，无法回滚了。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1451385725a14520b983d55271a1cffb~tplv-k3u1fbpfcp-zoom-1.image" alt="21"></p>
+<p>那怎么办呢？</p>
+<p>很简单，把修改之前的age=1存起来不就行了吗，回滚的时候根据存起来的age=1回滚就行了。</p>
+<p>这个存修改之前的age=1的过程，就叫做记录undo log。</p>
+<p>undo翻译成中文是撤销、回滚的意思。事实上，undo log最大的作用就是回滚。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/addc31af8ce54c7a9d8b25602552df11~tplv-k3u1fbpfcp-zoom-1.image" alt="22"></p>
+<p>undo log默认存在全局表空间里面，你可以简单的理解成undo log也是存在一个MySQL的表里面，插入一条undo log和插入一条普通数据类似。所以，写入undo log的过程中同样也是要写入redo log的。</p>
+<h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><p>undo log记录的是修改之前的值，提供回滚的能力。</p>
+<p>redo log记录的是修改之后的值，提供了崩溃恢复的能力。</p>
+<p>那binlog是干什么的呢？</p>
+<p>binlog记录的是修改之后的值，用于归档。</p>
+<p>和redo log日志类似，binlog也有着自己的刷盘策略，通过sync_binlog参数控制：</p>
+<ul>
+<li>sync_binlog = 0 ：每次提交事务前将binlog写入os cache，由操作系统控制什么时候刷到磁盘</li>
+<li>sync_binlog =1 ：采用同步写磁盘的方式来写binlog，不使用os cache来写binlog</li>
+<li>sync_binlog = N ：当每进行n次事务提交之后，调用一次fsync将os cache中的binlog强制刷到磁盘</li>
+</ul>
+<p>这个时候你会问了，binlog和redo log都是记录的修改之后的值，这两者有什么区别呢？记录了redo log可以不可以不记binlog呢？</p>
+<p>首先看两者的区别：</p>
+<ul>
+<li>binlog是逻辑日志，记录的是对哪一个表的哪一行做了什么修改；redo log是物理日志，记录的是对哪个数据页中的哪个记录做了什么修改，如果你还不了解数据页，你可以理解成对磁盘上的哪个数据做了修改。</li>
+<li>binlog是追加写；redo log是循环写。</li>
+<li>binlog是Server层的日志；redo log是InnoDB的日志。</li>
+</ul>
+<p>但说实话，我觉得这些区别并不是redo log不能取代binlog的原因，完全可以调整redo log让他兼容现在redo log和binlog的能力。</p>
+<p>我认为不用redo log取代binlog最大的原因是“没必要”。</p>
+<p>为什么这么说呢？</p>
+<p>第一点，binlog的生态已经建立起来。MySQL系统高可用依赖的就是binlog复制，还有很多公司的数据分析系统，也是依赖的binlog。像阿里巴巴的开源框架Canal，也是基于binlog开发的。</p>
+<p>第二点，binlog并不是MySQL的瓶颈，花时间在没有瓶颈的地方没必要。</p>
+<p>就像我们常用的Maven，在构建速度上已经被Gradle完爆了，但是我们新建项目的时候还是用着Maven，为什么呢？</p>
+<p>也是一样的道理，Maven用的习惯了，构建慢但还没慢到影响项目开发的程度。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>需要提前交代清楚的是，因为binlog属于MySQL的Server层，而redo log和undo log是存储引擎InnoDB的日志，所以全文是在MySQL使用了InnoDB存储引擎的基础上展开的。</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1e85fb182dd74064ab0a0ae23bcd1592~tplv-k3u1fbpfcp-zoom-1.image" alt="image-20210616005149115"></p>
+<p>事实上，这三种日志还有很多细节我没有提到，我花了6000字3000帧动画想要告诉你的只有三个词：恢复、回滚、归档。</p>
+<p>而这每个词都对应着一种日志：</p>
+<ul>
+<li>redo log——恢复</li>
+<li>undo log——回滚</li>
+<li>binlog——归档</li>
+</ul>
+<p>这三种日志非常重要，是学习MySQL体系的基础，后面关于事务和MVCC的文章都会再次提到这些日志。</p>
+<p>好了，今天的文章就到这里了。</p>
+<p>感谢你的阅读！我是CoderW，我们下期再见。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>《MySQL实战45讲》</li>
+<li>《从根儿上理解MySQL》</li>
+<li>《MySQL技术内幕—InnoDB存储引擎》第2版</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>3000帧动画图解MySQL为什么需要binlog、redo log和undo log</p><p><a href="https://www.wangheng.online/archives/37862190.html">https://www.wangheng.online/archives/37862190.html</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><a href="https://www.wangheng.online"><p>CoderW</p></a></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2021-07-10</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2021-11-11</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icon" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a><a class="icon" rel="noopener" target="_blank" title="Attribution" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a><a class="icon" rel="noopener" target="_blank" title="Noncommercial" href="https://creativecommons.org/licenses/by-nc/4.0/"><i class="fab fa-creative-commons-nc"></i></a></p></div></div></div></div></div><div class="recommend-area"><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 相关文章</span><br><span>  1.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span></div><div class="recommend-post"><span class="is-size-6 has-text-grey has-mr-7"># 推荐文章</span><br><span>  1.<a class="is-size-6" href="/archives/491288aa.html" target="_blank">这段关于安全点的JVM源码有点意思</a><br></span><span>  2.<a class="is-size-6" href="/archives/37862190.html" target="_blank">3000帧动画图解MySQL为什么需要binlog、redo log和undo log</a><br></span><span>  3.<a class="is-size-6" href="/archives/7a85ad07.html" target="_blank">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a><br></span><span>  4.<a class="is-size-6" href="/archives/336df028.html" target="_blank">分布式数据库TiDB调研</a><br></span><span>  5.<a class="is-size-6" href="/archives/5f67733.html" target="_blank">来自未来的技术——ZGC垃圾回收器</a><br></span><span>  6.<a class="is-size-6" href="/archives/cd29407f.html" target="_blank">TiDB替换MySQL上线方案（简化版）</a><br></span></div></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/css/share.min.css"><div class="social-share"></div><script src="https://cdnjs.loli.net/ajax/libs/social-share.js/1.0.16/js/social-share.min.js"></script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/archives/336df028.html"><i class="level-item fas fa-chevron-left"></i><span class="level-item">分布式数据库TiDB调研</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/archives/cd29407f.html"><span class="level-item">TiDB替换MySQL上线方案（简化版）</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--><div class="card"><div class="card-content"><div class="title is-5">评论</div><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.0/gitalk.css"><script> $.getScript('/js/gitalk.min.js', function () { 
+            var gitalk = new Gitalk({
+            language:'zh-CN',
+            id: 'f739284084bfc4ab30e016c4591f6bd7',
+            repo: 'xiaoyingzhi.github.io',
+            owner: 'xiaoyingzhi',
+            clientID: '6d30d2adb400a68b3378',
+            clientSecret: 'c8dfac0a2197e87a9d0cf010e389267bfd576c4e',
+            admin: ["xiaoyingzhi"],
+            createIssueManually: true,
+            distractionFreeMode: false,
+            perPage: 10,
+            pagerDirection: 'last',
+            proxy: 'https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token',
+            
+            enableHotKey: true,
+            isLocked: false
+        })
+        gitalk.render('comment-container')});</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex is-mobile" href="#InnoDB存储引擎"><span>InnoDB存储引擎</span></a></li><li><a class="is-flex is-mobile" href="#Buffer-Pool"><span>Buffer Pool</span></a></li><li><a class="is-flex is-mobile" href="#redo-log"><span>redo log</span></a><ul class="menu-list"><li><a class="is-flex is-mobile" href="#innodb-flush-log-at-trx-commit-0：延迟写，延迟刷"><span>innodb_flush_log_at_trx_commit  = 0：延迟写，延迟刷</span></a></li><li><a class="is-flex is-mobile" href="#innodb-flush-log-at-trx-commit-1：实时写，实时刷"><span>innodb_flush_log_at_trx_commit  = 1：实时写，实时刷</span></a></li><li><a class="is-flex is-mobile" href="#innodb-flush-log-at-trx-commit-2：实时写，延迟刷"><span>innodb_flush_log_at_trx_commit  = 2：实时写，延迟刷</span></a></li></ul></li><li><a class="is-flex is-mobile" href="#undo-log"><span>undo log</span></a></li><li><a class="is-flex is-mobile" href="#binlog"><span>binlog</span></a></li><li><a class="is-flex is-mobile" href="#总结"><span>总结</span></a></li><li><a class="is-flex is-mobile" href="#参考资料"><span>参考资料</span></a></li></ul></div></div><style>.menu-list > li > a.is-active + .menu-list { display: block; }.menu-list > li > a + .menu-list { display: none; }</style><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="profile"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar is-rounded" src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/85f5d825af7747f6815621c92dd6e83e~tplv-k3u1fbpfcp-watermark.image" alt="CoderW"></figure><p class="title is-size-4 is-block" style="line-height:inherit;">CoderW</p><p class="is-size-6 is-block">Java工程师</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>China.Beijing, Tiger</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">文章</p><a href="/archives"><p class="title">15</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">分类</p><a href="/categories"><p class="title">6</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">标签</p><a href="/tags"><p class="title">16</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/xiaoyingzhi" target="_blank" rel="noopener">CoderW</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Email" href="mailto:coderw_work@163.com"><i class="fa fa-envelope"></i></a></div></div></div><div class="card widget" data-type="links"><div class="card-content"><div class="menu"><h3 class="menu-label">链接</h3><ul class="menu-list"><li><a class="level is-mobile" href="https://www.cnblogs.com/coderw/" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">博客园</span></span><span class="level-right"><span class="level-item tag">www.cnblogs.com</span></span></a></li><li><a class="level is-mobile" href="https://juejin.cn/user/3799530647851448" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">掘金</span></span><span class="level-right"><span class="level-item tag">juejin.cn</span></span></a></li><li><a class="level is-mobile" href="https://blog.csdn.net/Soul_wh" target="_blank" rel="noopener"><span class="level-left"><span class="level-item">CSDN</span></span><span class="level-right"><span class="level-item tag">blog.csdn.net</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新评论</h3><span class="body_hot_comment">加载中，最新评论有1分钟缓存...</span></div></div><div class="card widget"><div class="card-content"><h3 class="menu-label">最新文章</h3><article class="media"><figure class="media-left"><a class="image" href="/archives/336df028.html"><img src="https://github.com/pingcap/tidb/blob/master/docs/architecture.png?raw=true" alt="分布式数据库TiDB调研"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-07-11T08:21:26.000Z">2021-07-11</time></p><p class="title"><a href="/archives/336df028.html">分布式数据库TiDB调研</a></p><p class="categories"><a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/37862190.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/1e85fb182dd74064ab0a0ae23bcd1592~tplv-k3u1fbpfcp-zoom-1.image" alt="3000帧动画图解MySQL为什么需要binlog、redo log和undo log"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-07-10T09:39:38.000Z">2021-07-10</time></p><p class="title"><a href="/archives/37862190.html">3000帧动画图解MySQL为什么需要binlog、redo log和undo log</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/cd29407f.html"><img src="https://github.com/pingcap/tidb/blob/master/docs/architecture.png?raw=true" alt="TiDB替换MySQL上线方案（简化版）"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-06-11T08:21:26.000Z">2021-06-11</time></p><p class="title"><a href="/archives/cd29407f.html">TiDB替换MySQL上线方案（简化版）</a></p><p class="categories"><a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/491288aa.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/929c133567b44010a2484e0c7921424e~tplv-k3u1fbpfcp-zoom-1.image" alt="这段关于安全点的JVM源码有点意思"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-05-16T05:11:47.000Z">2021-05-16</time></p><p class="title"><a href="/archives/491288aa.html">这段关于安全点的JVM源码有点意思</a></p><p class="categories"><a href="/categories/JVM/">JVM</a></p></div></article><article class="media"><figure class="media-left"><a class="image" href="/archives/7a85ad07.html"><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a4d066b9168c428eb57654bc517946f2~tplv-k3u1fbpfcp-watermark.image" alt="一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG"></a></figure><div class="media-content"><p class="date"><time dateTime="2021-04-18T14:24:37.000Z">2021-04-18</time></p><p class="title"><a href="/archives/7a85ad07.html">一个诡异的MySQL查询超时，居然揭开了隐藏了两年的BUG</a></p><p class="categories"><a href="/categories/MySQL/">MySQL</a></p></div></article></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile is-marginless" href="/categories/JVM/"><span class="level-start"><span class="level-item">JVM</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Java/"><span class="level-start"><span class="level-item">Java</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/MySQL/"><span class="level-start"><span class="level-item">MySQL</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/Python/"><span class="level-start"><span class="level-item">Python</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile is-marginless" href="/categories/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="level-start"><span class="level-item">程序人生</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li></ul></div></div></div><div class="card widget"><div class="card-content"><div class="menu"><h3 class="menu-label">标签</h3><div class="field is-grouped is-grouped-multiline"><div class="control"><a class="tags has-addons" href="/tags/Java/"><span class="tag">Java</span><span class="tag is-grey-lightest">8</span></a></div><div class="control"><a class="tags has-addons" href="/tags/JVM/"><span class="tag">JVM</span><span class="tag is-grey-lightest">6</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/"><span class="tag">并发编程</span><span class="tag is-grey-lightest">3</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Bug%E5%AE%9A%E4%BD%8D/"><span class="tag">Bug定位</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/MySQL/"><span class="tag">MySQL</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/NewSQL/"><span class="tag">NewSQL</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/TiDB/"><span class="tag">TiDB</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="tag">数据库</span><span class="tag is-grey-lightest">2</span></a></div><div class="control"><a class="tags has-addons" href="/tags/H2/"><span class="tag">H2</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/Python/"><span class="tag">Python</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/binlog/"><span class="tag">binlog</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/redo-log/"><span class="tag">redo log</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/undo-log/"><span class="tag">undo log</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E5%B8%B8%E9%87%8F%E6%B1%A0/"><span class="tag">常量池</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/"><span class="tag">数据分析</span><span class="tag is-grey-lightest">1</span></a></div><div class="control"><a class="tags has-addons" href="/tags/%E7%A8%8B%E5%BA%8F%E4%BA%BA%E7%94%9F/"><span class="tag">程序人生</span><span class="tag is-grey-lightest">1</span></a></div></div></div></div></div><div class="column-right-shadow is-hidden-widescreen"></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.png" alt="CoderW技术博客 | Java | JVM | Python | Kafka | Zookeeper" height="28"></a><p class="size-small"><span>&copy; 2021 CoderW</span><br><span><span id="statistic-times">loading...</span><script>function createTime(time) {
+            var n = new Date(time);
+            now.setTime(now.getTime() + 250),
+                days = (now - n) / 1e3 / 60 / 60 / 24,
+                dnum = Math.floor(days),
+                hours = (now - n) / 1e3 / 60 / 60 - 24 * dnum,
+                hnum = Math.floor(hours),
+            1 == String(hnum).length && (hnum = "0" + hnum),
+                minutes = (now - n) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
+                mnum = Math.floor(minutes),
+            1 == String(mnum).length && (mnum = "0" + mnum),
+                seconds = (now - n) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
+                snum = Math.round(seconds),
+            1 == String(snum).length && (snum = "0" + snum),
+                document.getElementById("statistic-times").innerHTML = "本站自 <strong>"+time.split(" ")[0].replace(/\//g,".")+"</strong> 已运行 <strong>" + dnum + "</strong> 天 <strong>" + hnum + "</strong> 小时 <strong>" + mnum + "</strong> 分 <strong>" + snum + "</strong> 秒️";
+        }var now = new Date();setInterval("createTime('2019/03/01 00:00:00')", 250,"");</script><br></span><div class="size-small"><span>访问人数: <strong><span id="busuanzi_value_site_uv">99+</span></strong> 访问量: <strong><span id="busuanzi_value_site_pv">99+</span></strong>️</span></div></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/xiaoyingzhi"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" async></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><script>$.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);})</script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.js"></script><script type="text/javascript">var pjax = new Pjax({
+            elements: "a",//代表点击链接就更新
+            selectors: [  //代表要更新的节点
+                ".section",
+                "title"
+            ],
+            cache: true,
+            cacheBust:false
+        })
+
+        function loadBusuanzi(){
+        $.getScript("//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js", function () {});
+        }
+
+        function loadMathJax() { //加载mathjax
+            $.getScript("//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML", function () {
+                MathJax.Hub.Config({ tex2jax: { inlineMath: [['$', '$'], ['\(', '\)']] } });
+                var math = document.getElementsByClassName("entry-content")[0];
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, math]);
+            });
+        };
+
+        // 开始 PJAX 执行的函数
+        document.addEventListener('pjax:send', function () {
+        });
+        
+        // PJAX 完成之后执行的函数，可以和上面的重载放在一起
+        document.addEventListener('pjax:complete', function () {
+            $(".section").css({opacity:1});
+            if(true){
+                $.getScript('/js/comment-issue-data.js',function(){loadIssueData('6d30d2adb400a68b3378','c8dfac0a2197e87a9d0cf010e389267bfd576c4e','xiaoyingzhi','xiaoyingzhi.github.io',false);});
+            }
+            if(false){
+                loadMathJax();
+            }
+            loadMainJs(jQuery, window.moment, window.ClipboardJS, window.IcarusThemeSettings);
+            loadBackTop();
+            loadBusuanzi();
+            if(typeof loadBanner == 'function'){
+                loadBanner();
+            }
+        });</script></body></html>
